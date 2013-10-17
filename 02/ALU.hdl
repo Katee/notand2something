@@ -66,16 +66,9 @@ CHIP ALU {
 
     // not our out if no == 1
     Not16(in=fout, out=notfout);
-    Mux16(a=fout, b=notfout, sel=no, out=almostout);
+    Mux16(a=fout, b=notfout, sel=no, out=out, out[15]=ng/*the msb is ng*/, out=out0);
 
     // if any bits are on zr = 1
-    Or16Way(in=almostout, out=anyones);
-    Not(in=anyones, out=zr);
-
-    // being less than zero means the msb = 1
-    Not16(in=almostout, out=garbage, out[15]=notng); // UGH why didn't they allow sub-bused pins
-    Not(in=notng, out=ng);
-
-    // output calculation result
-    Or16(a=almostout, b=false, out=out);
+    Or16Way(in=out0, out=zr0);
+    Not(in=zr0, out=zr);
 }
