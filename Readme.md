@@ -1,3 +1,3 @@
 # Nand2Tetris
 
-My solutions to the very fun [http://www.nand2tetris.org/](Nand2Tetris) Project.
+My solutions to the very fun [Nand2Tetris](http://www.nand2tetris.org/) Project.
