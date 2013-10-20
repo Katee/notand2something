@@ -1,0 +1,15 @@
+{
+  "name": "assembler",
+  "description": "Assembler for Hack ASM (from the Nand2Tetris Book)",
+  "version": "0.0.1",
+  "author": {
+    "name": "Kate Murphy",
+    "email": "hello@kate.io"
+  },
+  "engines": ["node >= 0.8.0"],
+  "main": "assembler.js",
+  "dependencies": {
+    "underscore": "1.5.2",
+    "q": "0.9.7"
+  }
+}
