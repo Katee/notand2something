@@ -13,18 +13,27 @@ if (process.argv.length > 2) {
   console.log("No file given");
 }
 
+var options = {
+  tempStart: 5,
+  staticStart: 16,
+  stackStart: 256,
+  heapStart: 2048,
+  debug: true
+};
+
 Q.nfcall(fs.readFile, inFilename, 'utf8').then(function(data){
   var parser = new Parser(data);
-  var codeWriter = new CodeWriter(outFilename);
+  var codeWriter = new CodeWriter(outFilename, options);
 
-  // initialize SP pointer to 256
-  codeWriter.writeCommands(["@256", "D=A", "@SP", "M=D", ""]);
+  // set the SP to point to the stack
+  codeWriter.writeCommands(["@"+options.stackStart, "D=A", "@SP", "M=D"]);
 
   _.each(parser.commands, function(command){
     var parsedCommand = Parser.parseCommand(command);
     codeWriter.write(parsedCommand);
   });
 
+  // end program in an endless loop
   codeWriter.writeCommands(["(END)", "@END", "0;JMP"]);
 }).catch(function(err){
   throw err;
