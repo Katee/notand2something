@@ -16,6 +16,11 @@ if (process.argv.length > 2) {
   if (inFilename == outFilename) {
     throw {name: "NoOutFile", message: "Please provide a filename to write out to."};
   }
+
+  // if the outFile exists, delete it
+  fs.exists(outFilename, function (exists) {
+    if (exists) fs.unlinkSync(outFilename);
+  });
 } else {
   console.log("Please provide a filename to read from.");
   process.exit();
