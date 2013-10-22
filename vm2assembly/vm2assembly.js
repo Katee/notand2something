@@ -29,20 +29,16 @@ var options = {
   debug: true
 };
 
-//Q.nfcall(fs.readFile, inFilename, 'utf8').then(function(data){
 fs.readFile(inFilename, 'utf8', function(err, data){
   var parser = new Parser(data);
   var codeWriter = new CodeWriter(outFilename, options);
 
-  // set the SP to point to the stack
-  codeWriter.writeCommands(["@"+options.stackStart, "D=A", "@SP", "M=D"]);
+  codeWriter.writeInit();
 
   _.each(parser.commands, function(command){
     var parsedCommand = Parser.parseCommand(command);
     codeWriter.write(parsedCommand);
   });
 
-  // end program in an endless loop
-  codeWriter.writeCommands(["(END)", "@END", "0;JMP"]);
+  codeWriter.writeExit();
 });
-//}).done();
