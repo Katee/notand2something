@@ -47,6 +47,10 @@ Parser.parseCommand = function(command){
     commandObject.type = "C_LABEL";
     commandObject.args = commandParts.slice(1);
     break;
+  case "goto":
+    commandObject.type = "C_GOTO";
+    commandObject.args = commandParts.slice(1);
+    break;
   case "if-goto":
     commandObject.type = "C_IF";
     commandObject.args = commandParts.slice(1);

@@ -16,6 +16,16 @@ function CodeWriter(filename, options) {
     });
   };
 
+  // set the SP to point to the stack
+  this.writeInit = function() {
+    this.writeCommands(["@"+this.options.stackStart, "D=A", "@SP", "M=D"]);
+  };
+
+  // end program in an endless loop
+  this.writeExit = function() {
+    this.writeCommands(["(END)", "@END", "0;JMP"]);
+  };
+
   // pop back in the stack
   this.pop = function(output) {
     this.pushToOutput(["@SP", "M=M-1", "A=M"], output);
@@ -49,13 +59,17 @@ function CodeWriter(filename, options) {
       this.writeArithmetic(parsedCommand.command, output);
     } else if (parsedCommand.type == 'C_LABEL') {
       output.push("(LABEL"+parsedCommand.args[0]+")");
+    } else if (parsedCommand.type == 'C_GOTO') {
+      label = parsedCommand.args[0];
+      output.push("@LABEL"+label);
+      output.push("0;JMP");
     } else if (parsedCommand.type == 'C_IF') {
       label = parsedCommand.args[0];
 
       this.pop(output);
       output.push("D=M");
       output.push("@LABEL"+label);
-      output.push("D;JEQ");
+      output.push("D;JNE");
     } else {
       throw new CodeWriterException('Unknown command: "'+parsedCommand.command+'"');
     }
