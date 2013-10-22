@@ -38,16 +38,27 @@ Parser.parseCommand = function(command){
   case "or":
   case "and":
   case "not":
-    commandObject.type = "C_ARITHMETIC";
-    break;
   case "eq":
   case "gt":
   case "lt":
-    commandObject.type = "C_LOGIC";
+    commandObject.type = "C_ARITHMETIC";
+    break;
+  case "label":
+    commandObject.type = "C_LABEL";
+    commandObject.args = commandParts.slice(1);
+    break;
+  case "if-goto":
+    commandObject.type = "C_IF";
+    commandObject.args = commandParts.slice(1);
     break;
   default:
-    throw {name: 'Unknown command type.'};
+    throw new ParserException('Unknown command type: "' + commandParts[0] + '" in command: "' + command + '"');
   }
 
   return commandObject;
 };
+
+function ParserException(message) {
+  this.name = "ParserException";
+  this.message = message;
+}

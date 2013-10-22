@@ -39,88 +39,108 @@ function CodeWriter(filename, options) {
   this.write = function(parsedCommand) {
     var output = [];
     var label;
+    if (options.debug) output.push('// '+parsedCommand.command);
 
     if (parsedCommand.type == "C_PUSH") {
-      if (parsedCommand.args[0] == "constant") {
-        if (options.debug) output.push('// push constant '+parsedCommand.args[1]);
-        output.push("@" + parsedCommand.args[1]);
-        output.push("D=A");
-        this.push(output);
-        this.inc(output);
-      } else if (parsedCommand.args[0] == "pointer") {
-        label = CodeWriter.getLabelForPointer(parsedCommand.args[1]);
-        if (options.debug) output.push('// push '+label+' '+parsedCommand.args[1]);
-        output.push("@"+label);
-        this.finishPush(output);
-      } else if (_.contains(["this", "that", "local", "argument"], parsedCommand.args[0])) {
-        label = CodeWriter.getLabelFromCommand(parsedCommand.args[0]);
-        if (options.debug) output.push('// push '+label+' '+parsedCommand.args[1]);
-
-        output.push("@" + label);
-        output.push("D=M");
-        output.push("@"+parsedCommand.args[1]);
-        output.push("D=D+A"); // data now has the address of the static var we need
-        output.push("A=D"); // our temp variable now has the address we should pop from
-        output.push("D=M"); // actually get content for register
-
-        // put content onto the stack
-        this.push(output);
-        this.inc(output);
-      } else if (_.contains(["static", "temp"], parsedCommand.args[0])) {
-        if (options.debug) output.push('// push '+parsedCommand.args[0]+' '+parsedCommand.args[1]);
-        output.push("@"+this.options[parsedCommand.args[0]+"Start"]);
-        output.push("D=A");
-        output.push("@"+parsedCommand.args[1]);
-        output.push("D=D+A"); // data now has the address of the static var we need
-
-        output.push("A=D");
-
-        this.finishPush(output);
-      } else {
-        throw {name: 'UnknownPushLocation', message: 'Unknown push location: "'+parsedCommand.args[0]+'"'};
-      }
+      this.writePush(parsedCommand.args[0], parsedCommand.args[1], output);
     } else if (parsedCommand.type == "C_POP") {
+      this.writePop(parsedCommand.args[0], parsedCommand.args[1], output);
+    } else if (parsedCommand.type == 'C_ARITHMETIC') {
+      this.writeArithmetic(parsedCommand.command, output);
+    } else if (parsedCommand.type == 'C_LABEL') {
+      output.push("(LABEL"+parsedCommand.args[0]+")");
+    } else if (parsedCommand.type == 'C_IF') {
+      label = parsedCommand.args[0];
+
       this.pop(output);
       output.push("D=M");
-      if (parsedCommand.args[0] == "pointer") {
-        label = CodeWriter.getLabelForPointer(parsedCommand.args[1]);
-        if (options.debug) output.push('// pop pointer '+label);
-        output.push("@"+label);
-        output.push("M=D");
-      } else if (_.contains(["this", "that", "local", "argument", "static", "temp"], parsedCommand.args[0])) {
-        if (_.contains(["static", "temp"], parsedCommand.args[0])) {
-          if (options.debug) output.push('// pop '+parsedCommand.args[0]+ ' ' + parsedCommand.args[1]);
-          output.push("@"+this.options[parsedCommand.args[0]+"Start"]);
-          output.push("D=A");
-          output.push("@"+parsedCommand.args[1]);
-        } else {
-          label = CodeWriter.getLabelFromCommand(parsedCommand.args[0]);
-          if (options.debug) output.push('// pop '+label + ' ' + parsedCommand.args[1]);
-          output.push("@" + label);
-          output.push("D=M");
-          output.push("@"+parsedCommand.args[1]);
-        }
+      output.push("@LABEL"+label);
+      output.push("D;JEQ");
+    } else {
+      throw new CodeWriterException('Unknown command: "'+parsedCommand.command+'"');
+    }
 
-        output.push("D=D+A"); // data now has the address of the static var we need
-        output.push("@R13");
-        output.push("M=D"); // store for later
+    this.writeCommands(output);
+  };
 
-        output.push("@SP");
-        output.push("A=M");
-        output.push("D=M");
+  this.writePush = function(segment, index, output) {
+    if (segment == "constant") {
+      output.push("@" + index);
+      output.push("D=A");
+      this.push(output);
+      this.inc(output);
+    } else if (segment == "pointer") {
+      label = CodeWriter.getLabelForPointer(index);
+      output.push("@"+label);
+      this.finishPush(output);
+    } else if (_.contains(["this", "that", "local", "argument"], segment)) {
+      label = CodeWriter.getLabelFromCommand(segment);
 
-        output.push("@R13");
-        output.push("A=M");
-        output.push("M=D");
+      output.push("@" + label);
+      output.push("D=M");
+      output.push("@"+index);
+      output.push("D=D+A"); // data now has the address of the static var we need
+      output.push("A=D"); // our temp variable now has the address we should pop from
+      output.push("D=M"); // actually get content for register
 
-        // clear temp
-        output.push("@R13");
-        output.push("M=0");
+      // put content onto the stack
+      this.push(output);
+      this.inc(output);
+    } else if (_.contains(["static", "temp"], segment)) {
+      output.push("@"+this.options[segment+"Start"]);
+      output.push("D=A");
+      output.push("@"+index);
+      output.push("D=D+A"); // data now has the address of the static var we need
+
+      output.push("A=D");
+
+      this.finishPush(output);
+    } else {
+      throw new CodeWriterException('Unknown push location: "'+segment+'"');
+    }
+  };
+
+  this.writePop = function(segment, index, output) {
+    this.pop(output);
+    output.push("D=M");
+    if (segment == "pointer") {
+      label = CodeWriter.getLabelForPointer(index);
+      output.push("@"+label);
+      output.push("M=D");
+    } else if (_.contains(["this", "that", "local", "argument", "static", "temp"], segment)) {
+      if (_.contains(["static", "temp"], segment)) {
+        output.push("@"+this.options[segment+"Start"]);
+        output.push("D=A");
+        output.push("@"+index);
       } else {
-        throw {name: 'UnknownPushLocation', message: 'Unknown pop location: "'+parsedCommand.args[0]+'"'};
+        label = CodeWriter.getLabelFromCommand(segment);
+        output.push("@" + label);
+        output.push("D=M");
+        output.push("@"+index);
       }
-    } else if (parsedCommand.type == 'C_LOGIC') {
-      if (options.debug) output.push('// '+parsedCommand.command);
+
+      output.push("D=D+A"); // data now has the address of the static var we need
+      output.push("@R13");
+      output.push("M=D"); // store for later
+
+      output.push("@SP");
+      output.push("A=M");
+      output.push("D=M");
+
+      output.push("@R13");
+      output.push("A=M");
+      output.push("M=D");
+
+      // clear temp
+      output.push("@R13");
+      output.push("M=0");
+    } else {
+      throw new CodeWriterException('Unknown pop location: "'+segment+'"');
+    }
+  };
+
+  this.writeArithmetic = function(command, output) {
+    if(_.contains(["eq", "lt", "gt"])){
       this.pop(output);
 
       // store this value for later
@@ -128,7 +148,7 @@ function CodeWriter(filename, options) {
 
       this.pop(output);
 
-      label = parsedCommand.command.toUpperCase().replace('T','E');
+      label = command.toUpperCase().replace('T','E');
 
       if (parsedCommand.command == "eq") {
         label = "NE";
@@ -152,47 +172,41 @@ function CodeWriter(filename, options) {
       this.inc(output);
 
       this.labelprefex++;
-    } else if (parsedCommand.type == 'C_ARITHMETIC') {
-      if (options.debug) output.push('// '+parsedCommand.command);
-
+    } else if (_.contains(["neg", "not"], command)) {
       // these commands only have one arg and work a little differently
-      if (_.contains(["neg", "not"], parsedCommand.command)) {
-        output.push("@SP");
-        output.push("M=M-1");
-        output.push("A=M");
-        if (parsedCommand.command == "not") {
-          output.push("M=!M");
-        } else {
-          output.push("M=-M");
-        }
-        output.push("@SP");
-        output.push("M=M+1");
+      output.push("@SP");
+      output.push("M=M-1");
+      output.push("A=M");
+      if (command == "not") {
+        output.push("M=!M");
       } else {
-        this.pop(output);
-
-        // store this value for later
-        output.push("D=M");
-
-        this.pop(output);
-
-        if (parsedCommand.command == "add") {
-          output.push("D=M+D");
-        } else if (parsedCommand.command == "sub") {
-          output.push("D=M-D");
-        } else if (parsedCommand.command == "and") {
-          output.push("A=M");
-          output.push("D=D&A");
-        } else if (parsedCommand.command == "or") {
-          output.push("A=M");
-          output.push("D=D|A");
-        }
-
-        this.push(output);
-        this.inc(output);
+        output.push("M=-M");
       }
-    }
+      output.push("@SP");
+      output.push("M=M+1");
+    } else {
+      this.pop(output);
 
-    fs.appendFileSync(filename, output.join('\n') + '\n');
+      // store this value for later
+      output.push("D=M");
+
+      this.pop(output);
+
+      if (command == "add") {
+        output.push("D=M+D");
+      } else if (command == "sub") {
+        output.push("D=M-D");
+      } else if (command == "and") {
+        output.push("A=M");
+        output.push("D=D&A");
+      } else if (command == "or") {
+        output.push("A=M");
+        output.push("D=D|A");
+      }
+
+      this.push(output);
+      this.inc(output);
+    }
   };
 
   this.writeCommands = function(commands) {
@@ -217,6 +231,11 @@ CodeWriter.getLabelForPointer = function(command) {
     case "1":
       return "THAT";
     default:
-      throw {name: 'UnknownPointerLocation', message: 'Unknown location for pointer: "'+parsedCommand.args[1]+'"'};
+      throw new CodeWriterException('Unknown location for pointer: "'+parsedCommand.args[1]+'"');
   }
 };
+
+function CodeWriterException(message) {
+  this.name = "CodeWriterException";
+  this.message = message;
+}
