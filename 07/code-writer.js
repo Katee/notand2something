@@ -119,7 +119,7 @@ function CodeWriter(filename, options) {
       } else {
         throw {name: 'UnknownPushLocation', message: 'Unknown pop location: "'+parsedCommand.args[0]+'"'};
       }
-    } else if (parsedCommand.type == 'C_IF') {
+    } else if (parsedCommand.type == 'C_LOGIC') {
       if (options.debug) output.push('// '+parsedCommand.command);
       this.pop(output);
 

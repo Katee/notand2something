@@ -43,7 +43,7 @@ Parser.parseCommand = function(command){
   case "eq":
   case "gt":
   case "lt":
-    commandObject.type = "C_IF";
+    commandObject.type = "C_LOGIC";
     break;
   default:
     throw {name: 'Unknown command type.'};
