@@ -21,16 +21,17 @@ function Parser(fileContents) {
 
 Parser.parseCommand = function(command){
   var commandParts = command.split(" ");
-  var commandObject = {command: command};
+  var commandObject = {
+    command: command,
+    args: commandParts.slice(1)
+  };
 
   switch (commandParts[0]) {
   case "push":
     commandObject.type = "C_PUSH";
-    commandObject.args = commandParts.slice(1);
     break;
   case "pop":
     commandObject.type = "C_POP";
-    commandObject.args = commandParts.slice(1);
     break;
   case "neg":
   case "add":
@@ -45,15 +46,12 @@ Parser.parseCommand = function(command){
     break;
   case "label":
     commandObject.type = "C_LABEL";
-    commandObject.args = commandParts.slice(1);
     break;
   case "goto":
     commandObject.type = "C_GOTO";
-    commandObject.args = commandParts.slice(1);
     break;
   case "if-goto":
     commandObject.type = "C_IF";
-    commandObject.args = commandParts.slice(1);
     break;
   default:
     throw new ParserException('Unknown command type: "' + commandParts[0] + '" in command: "' + command + '"');
