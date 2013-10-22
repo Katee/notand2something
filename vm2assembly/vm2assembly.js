@@ -1,5 +1,6 @@
 var _ = require('underscore');
 var Q = require('q');
+Q.longStackSupport = true;
 var fs = require('fs');
 
 var Parser = require('./parser');
@@ -28,7 +29,8 @@ var options = {
   debug: true
 };
 
-Q.nfcall(fs.readFile, inFilename, 'utf8').then(function(data){
+//Q.nfcall(fs.readFile, inFilename, 'utf8').then(function(data){
+fs.readFile(inFilename, 'utf8', function(err, data){
   var parser = new Parser(data);
   var codeWriter = new CodeWriter(outFilename, options);
 
@@ -42,6 +44,5 @@ Q.nfcall(fs.readFile, inFilename, 'utf8').then(function(data){
 
   // end program in an endless loop
   codeWriter.writeCommands(["(END)", "@END", "0;JMP"]);
-}).catch(function(err){
-  throw err;
-}).done();
+});
+//}).done();
