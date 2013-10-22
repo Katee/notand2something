@@ -128,39 +128,26 @@ function CodeWriter(filename, options) {
 
       this.pop(output);
 
+      label = parsedCommand.command.toUpperCase().replace('T','E');
+
       if (parsedCommand.command == "eq") {
-        output.push("D=D-M");
-        output.push("@EQ"+this.labelprefex);
-        output.push("D;JEQ");
-
-        output.push("@SP");
-        output.push("A=M");
-        output.push("M=0");
-        output.push("@ENDEQ"+this.labelprefex);
-        output.push("0;JMP");
-        output.push("(EQ"+this.labelprefex+")");
-        output.push("@SP");
-        output.push("A=M");
-        output.push("M=-1");
-        output.push("(ENDEQ"+this.labelprefex+")");
-      } else if (_.contains(["lt", "gt"], parsedCommand.command)) {
-        label = parsedCommand.command.toUpperCase().replace('T','E');
-
-        output.push("D=D-M");
-        output.push("@"+label+this.labelprefex);
-        output.push("D;J"+label);
-
-        output.push("@SP");
-        output.push("A=M");
-        output.push("M=-1");
-        output.push("@END"+label+this.labelprefex);
-        output.push("0;JMP");
-        output.push("("+label+this.labelprefex+")");
-        output.push("@SP");
-        output.push("A=M");
-        output.push("M=0");
-        output.push("(END"+label+this.labelprefex+")");
+        label = "NE";
       }
+
+      output.push("D=D-M");
+      output.push("@"+label+this.labelprefex);
+      output.push("D;J"+label);
+
+      output.push("@SP");
+      output.push("A=M");
+      output.push("M=-1");
+      output.push("@END"+label+this.labelprefex);
+      output.push("0;JMP");
+      output.push("("+label+this.labelprefex+")");
+      output.push("@SP");
+      output.push("A=M");
+      output.push("M=0");
+      output.push("(END"+label+this.labelprefex+")");
 
       this.inc(output);
 
