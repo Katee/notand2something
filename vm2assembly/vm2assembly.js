@@ -8,9 +8,16 @@ var CodeWriter = require('./code-writer');
 if (process.argv.length > 2) {
   var args = process.argv.slice(2);
   var inFilename = args[0];
-  var outFilename = args[1];
+
+  // if no outfile name is passed use the infilename but change the extension to be .asm
+  var outFilename = args[1] || inFilename.replace(/\.vm$/, '.asm');
+  // deal with case where the inFilename is not a .vm
+  if (inFilename == outFilename) {
+    throw {name: "NoOutFile", message: "Please provide a filename to write out to."};
+  }
 } else {
-  console.log("No file given");
+  console.log("Please provide a filename to read from.");
+  process.exit();
 }
 
 var options = {
