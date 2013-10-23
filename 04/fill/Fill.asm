@@ -22,14 +22,14 @@
 
 // set current color to zero (all bits off)
 (WHITE)
-  @0
+  @R0
   D=A
   @CURRENTCOLOR
   0;JMP
 
 // set current color to -1 (all bits on)
 (BLACK)
-  @0
+  @R0
   D=A-1
 
 (CURRENTCOLOR)
