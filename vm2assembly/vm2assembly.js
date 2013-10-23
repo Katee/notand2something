@@ -13,8 +13,7 @@ var options = {
   stackStart: 256,
   heapStart: 2048,
   debug: true,
-  writeInit: false,
-  writeExit: false
+  writeInit: true
 };
 
 if (process.argv.length > 2) {
@@ -75,11 +74,11 @@ function startParsing(data, outFilename) {
   var codeWriter = new CodeWriter(outFilename, options);
 
   if (options.writeInit) codeWriter.writeInit();
+  // start the Sys.init method if it exists
+  if (_.contains(parser.commands, 'function Sys.init 0')) codeWriter.writeSysInit();
 
   _.each(parser.commands, function(command){
     var parsedCommand = Parser.parseCommand(command);
     codeWriter.write(parsedCommand);
   });
-
-  if (options.writeExit) codeWriter.writeExit();
 }
