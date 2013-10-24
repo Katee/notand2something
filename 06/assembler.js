@@ -12,62 +12,48 @@ if (process.argv.length > 2) {
   console.log("No file given");
 }
 
-Q.nfcall(fs.readFile, filename, 'utf8').then(function(data){
-  var parser = new Parser(data);
-  var symbolTable = new SymbolTable();
-  var currentAddress = 0;
-
-  // first pass, build up symbol table
-  _.each(parser.commands, function(command){
-    var commandType = Parser.commandType(command);
-    var symbol = Parser.symbol(command);
-    var number = Number(symbol);
-
-    if (commandType === "L_COMMAND" && symbol != undefined) {
-      if (isNaN(number) && !symbolTable.contains(symbol)) {
-        symbolTable.addEntry(symbol, currentAddress);
-      }
-    } else {
-      currentAddress++;
-    }
-  });
-
-  var currentRAMAddress = 16;
-  // second pass
-  _.each(parser.commands, function(command){
-    var commandType = Parser.commandType(command);
-    var symbol = Parser.symbol(command);
-    var number = Number(symbol);
-
-    if (commandType === "A_COMMAND" && symbol != undefined) {
-      var address = number;
-      if (isNaN(address)) {
-        if (symbolTable.contains(symbol)) {
-          address = symbolTable.getAddress(symbol);
-        } else {
-          address = currentRAMAddress;
-          symbolTable.addEntry(symbol, address);
-          currentRAMAddress++;
-        }
-      }
-      output(to16BitBinary(address));
-    } else if (commandType === "C_COMMAND") {
-      var dest = Parser.dest(command);
-      var comp = Parser.comp(command);
-      var jump = Parser.jump(command);
-      output(["111", Code.comp(comp), Code.dest(dest), Code.jump(jump)].join(""));
-    }
-  });
+Q.nfcall(fs.readFile, filename, 'utf8')
+.then(assemble)
+.then(function(assembled){
+  console.log(assembled.join('\n'));
 }).done();
 
-function output(machineCommand) {
-  console.log(machineCommand);
-}
+function assemble(data) {
+  var RAM_OFFSET = 16;
 
-function to16BitBinary(number) {
-  var str = number.toString(2);
-  while (str.length < 16) {
-    str = '0' + str;
-  }
-  return str;
+  var parser = new Parser(data);
+  var symbolTable = new SymbolTable();
+
+  var commands = Parser.getParsedCommands(parser.commands);
+
+  // first pass, build up symbol table
+  _.chain(commands)
+    .filter(Parser.isLabelCommand)
+    .filter(function(command){
+      // ignore symbol commands that are a number as those are literals
+      return isNaN(command.symbol);
+    })
+    .each(function(command){
+      // add to the symbol table
+      symbolTable.addEntry(command.symbol, command.outputLineNumber);
+    });
+
+  var currentAddress = 0;
+  return _.chain(commands)
+    // ignore label commands
+    .reject(Parser.isLabelCommand)
+    .map(function(command){
+      if (command.type === "A_COMMAND") {
+        if (command.address === undefined) {
+          if (symbolTable.contains(command.symbol)) {
+            command.address = symbolTable.getAddress(command.symbol);
+          } else {
+            command.address = RAM_OFFSET + currentAddress;
+            symbolTable.addEntry(command.symbol, command.address);
+            currentAddress++;
+          }
+        }
+      }
+      return Code.output(command);
+    }).value();
 }

@@ -5,8 +5,8 @@ module.exports = Parser;
 function Parser(fileContents) {
   var parser = this;
 
-  var lines = fileContents.split('\n');
-  this.commands = _.chain(lines).map(function(line){
+  // get only lines the commands from the fileContents
+  this.commands = _.chain(fileContents.split('\n')).map(function(line){
     // remove comments
     var indexOf = line.indexOf('//');
     if (indexOf > -1) {
@@ -19,20 +19,51 @@ function Parser(fileContents) {
   }).value();
 }
 
-Parser.commandType = function(command){
+Parser.getParsedCommands = function(commands) {
+  var currentOutputLineNumber = 0;
+  return _.map(commands, function(command, index){
+    var parsed = Parser.parseCommand(command);
+    parsed.lineNumber = index + 1;
+    if (parsed.type !== "L_COMMAND") {
+      currentOutputLineNumber++;
+    }
+    parsed.outputLineNumber = currentOutputLineNumber;
+    return parsed;
+  });
+};
+
+Parser.parseCommand = function(command) {
+  var commandObject = {
+    command: command
+  };
+
   if (_.first(command) == "@") {
-    return "A_COMMAND";
+    // address commands start with an @
+    commandObject.type = "A_COMMAND";
+    commandObject.symbol = Parser.symbol(command);
+    if (!isNaN(commandObject.symbol)) {
+      commandObject.address = Number(commandObject.symbol);
+    }
   } else if (_.first(command) == "(" && _.last(command) == ")") {
-    return "L_COMMAND";
+    // label commands are enclosed by parens
+    commandObject.type = "L_COMMAND";
+    commandObject.symbol = Parser.symbol(command);
+    if (!isNaN(commandObject.symbol)) {
+      commandObject.address = Number(commandObject.symbol);
+    }
   } else {
-    return "C_COMMAND";
+    // otherwise it's a command that assigns a register a value
+    commandObject.type = "C_COMMAND";
+    commandObject.dest = Parser.dest(command);
+    commandObject.comp = Parser.comp(command);
+    commandObject.jump = Parser.jump(command);
   }
+
+  return commandObject;
 };
 
 Parser.symbol = function(command){
-  if (_.contains(["A_COMMAND", "L_COMMAND"], Parser.commandType(command))) {
-    return command.replace(/[()@]/g, '');
-  }
+  return command.replace(/[()@]/g, '');
 };
 
 Parser.dest = function(command){
@@ -48,4 +79,8 @@ Parser.comp = function(command){
 
 Parser.jump = function(command){
   return command.split(";")[1];
+};
+
+Parser.isLabelCommand = function(command) {
+  return command.type === "L_COMMAND";
 };
