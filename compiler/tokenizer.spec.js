@@ -8,7 +8,7 @@ describe("Tokenizer tests", function() {
   });
 
   it("Ignores block comments", function() {
-    var tokenizer = new Tokenizer("/* block comment \n */null/* another block */");
+    var tokenizer = new Tokenizer("/* block comment \n with newline */null/* another block */");
     tokenizer.advance();
     expect(tokenizer.currentToken).toBe("null");
   });
@@ -17,6 +17,18 @@ describe("Tokenizer tests", function() {
     var tokenizer = new Tokenizer('let x = y;');
     var tokens = getAllTokens(tokenizer);
     expect(tokens).toEqual(['let', 'x', '=', 'y', ';']);
+  });
+
+  it("Can deal with missing spaces", function() {
+    var tokenizer = new Tokenizer('let x=y;');
+    var tokens = getAllTokens(tokenizer);
+    expect(tokens).toEqual(['let', 'x', '=', 'y', ';']);
+  });
+
+  it("Can have numbers in variable names", function() {
+    var tokenizer = new Tokenizer('let x1=y;');
+    var tokens = getAllTokens(tokenizer);
+    expect(tokens).toEqual(['let', 'x1', '=', 'y', ';']);
   });
 
   it("Tokenizes double quoted strings.", function() {
