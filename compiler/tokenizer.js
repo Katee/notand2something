@@ -13,6 +13,9 @@ var keywords = [
   "let", "do", "if", "else", "while", "return"
 ];
 
+var MIN_INTEGER = 0;
+var MAX_INTEGER = 32767;
+
 function Tokenizer(fileContents) {
   this.fileContents = fileContents;
 
@@ -147,8 +150,13 @@ Tokenizer.prototype.advance = function() {
       this.textIndex++;
     }
 
-    this.currentToken = new IntegerConstant(this.text.slice(tokenStartIndex, this.textIndex));
-    return;
+    var integer = this.text.slice(tokenStartIndex, this.textIndex);
+    if (Number(integer) <= MAX_INTEGER && Number(integer) >= MIN_INTEGER) {
+      this.currentToken = new IntegerConstant(integer);
+      return;
+    } else {
+      throw {name: "IntegerOutOfBounds", message: integer + ' is not in the range ' + MIN_INTEGER + '..' + MAX_INTEGER};
+    }
   }
 
   // if we are in a string go to the end of it then return it

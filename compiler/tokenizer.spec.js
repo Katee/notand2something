@@ -51,6 +51,11 @@ describe("Tokenizer", function() {
     expect(tokens[3].content).toBe("A double quoted string.");
   });
 
+  it("integer constants have a maximum value", function() {
+    var tokenizer = new Tokenizer('3000000');
+    expect(tokenizer.advance).toThrow();
+  });
+
   // Helper method to that gets all tokens from an initialized tokenizer
   function getAllTokens(tokenizer) {
     var tokens = [];
