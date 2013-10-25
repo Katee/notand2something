@@ -30,9 +30,10 @@ getFilesOfExtension(inPath, options.inputExtension, options.outputExtension).the
 
   _.each(files, function(file){
     var tokenizer = new Tokenizer(file.content);
-    while (tokenizer.hasMoreTokens()) {
+
+    while (tokenizer.hasMoreText()) {
       tokenizer.advance();
-      console.log("'%s'", tokenizer.currentToken);
+      console.log(tokenizer.currentToken);
     }
   });
 }).done();
