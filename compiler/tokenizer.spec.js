@@ -27,6 +27,12 @@ describe("Tokenizer", function() {
     expect(tokens).toEqual(['let', 'x', '=', 'y', ';']);
   });
 
+  it("identifiers may start and contain underscores", function() {
+    var tokenizer = new Tokenizer('_x_ = 10;');
+    tokenizer.advance();
+    expect(tokenizer.currentToken).toEqual({type: "identifier", content: "_x_"});
+  });
+
   it("Can deal with missing spaces", function() {
     var tokenizer = new Tokenizer('let x=y;');
     var tokens = _.map(getAllTokens(tokenizer), getTokenContent);
