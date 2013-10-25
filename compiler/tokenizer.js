@@ -50,11 +50,7 @@ function Tokenizer(fileContents) {
     return this.hasMoreText() && this.text[this.textIndex].match(/[a-zA-Z0-9_]/);
   };
 
-  this.isIntegerStart = function() {
-    return this.hasMoreText() && this.text[this.textIndex].match(/[0-9]/);
-  };
-
-  this.isInInteger = function() {
+  this.isIntegerPart = function() {
     return this.hasMoreText() && this.text[this.textIndex].match(/[0-9]/);
   };
 
@@ -145,12 +141,11 @@ Tokenizer.prototype.advance = function() {
   }
 
   // if we are in a string go to the end of it then return it
-  if (this.isIntegerStart()) {
+  if (this.isIntegerPart()) {
     this.textIndex++;
-    while (this.isInInteger()) {
+    while (this.isIntegerPart()) {
       this.textIndex++;
     }
-    this.textIndex++;
 
     this.currentToken = new IntegerConstant(this.text.slice(tokenStartIndex, this.textIndex));
     return;

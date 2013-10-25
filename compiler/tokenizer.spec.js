@@ -39,6 +39,12 @@ describe("Tokenizer", function() {
     expect(tokens).toEqual(['let', 'x1', '=', 'y', ';']);
   });
 
+  it("Does not allow variables to start with a number", function() {
+    var tokenizer = new Tokenizer('let 1x=y;');
+    var tokens = getAllTokens(tokenizer);
+    expect(tokens[1].type).toEqual('integerConstant');
+  });
+
   it("Tokenizes double quoted strings.", function() {
     var tokenizer = new Tokenizer('let string = "A double quoted string.";');
     var tokens = getAllTokens(tokenizer);
