@@ -6,7 +6,7 @@ var BLOCK_COMMENT_START = "/*";
 var BLOCK_COMMENT_END = "*/";
 var INLINE_COMMENT = "//";
 var SYMBOLS = "{}()[].,;+-*/&|<>=~";
-var keywords = [
+var KEYWORDS = [
   "class", "constructor", "function", "method", "field", "static",
   "var", "method", "field", "static", "var", "int", "char",
   "boolean", "void", "true", "false", "null", "this",
@@ -19,11 +19,6 @@ var MAX_INTEGER = 32767;
 function Tokenizer(fileContents) {
   this.fileContents = fileContents;
 
-  this.currentCharacter = 0;
-  this.currentLine = 0;
-  this.nameStack = [];
-  this.stack = [];
-
   /*
    * All inline comments and blank lines removed and joined into a string
    */
@@ -34,8 +29,6 @@ function Tokenizer(fileContents) {
    * The current token, can become the next token by calling 'advance'
    */
   this.currentToken;
-
-  this.test = [];
 
   this.isStartOfBlockComment = function() {
     return this.text.slice(this.textIndex, this.textIndex + 2) === BLOCK_COMMENT_START;
@@ -182,7 +175,7 @@ Tokenizer.prototype.advance = function() {
 
     // A word can be a keyword or an indentifier
     var word = this.text.slice(tokenStartIndex, this.textIndex);
-    if (_.contains(keywords, word)) {
+    if (_.contains(KEYWORDS, word)) {
       this.currentToken = new Keyword(word);
     } else {
       this.currentToken = new Identifier(word);
