@@ -5,12 +5,16 @@ module.exports = Tokenizer;
 var BLOCK_COMMENT_START = "/*";
 var BLOCK_COMMENT_END = "*/";
 var INLINE_COMMENT = "//";
-var symbols = "{}()[].,;+-*/&|<>=~";
+var SYMBOLS = "{}()[].,;+-*/&|<>=~";
+var keywords = [
+  "class", "constructor", "function", "method", "field", "static",
+  "var", "method", "field", "static", "var", "int", "char",
+  "boolean", "void", "true", "false", "null", "this",
+  "let", "do", "if", "else", "while", "return"
+];
 
 function Tokenizer(fileContents) {
   this.fileContents = fileContents;
-  this.lines = Tokenizer.removeInlineComments(fileContents.split('\n'));
-  this.totalLines = this.lines.length;
 
   this.currentCharacter = 0;
   this.currentLine = 0;
@@ -18,9 +22,9 @@ function Tokenizer(fileContents) {
   this.stack = [];
 
   /*
-   * All code with inline comments removed joined into a string
+   * All inline comments and blank lines removed and joined into a string
    */
-  this.text = Tokenizer.removeInlineComments(fileContents.split('\n')).join(" ");
+  this.text = Tokenizer.cleanUp(fileContents.split('\n')).join(" ");
   this.textIndex = 0;
 
   /**
@@ -34,191 +38,185 @@ function Tokenizer(fileContents) {
     return this.text.slice(this.textIndex, this.textIndex + 2) === BLOCK_COMMENT_START;
   };
 
-  // If we enter a block comment keep scanning until the comment block ends
-  this.advanceUntilEndOfBlockComment = function() {
-    return this.advanceUntil(BLOCK_COMMENT_END, 2);
-  };
-
-  // Got to the end of a string and return the string
-  this.advanceUntilEndString = function() {
-    return this.advanceUntil('"', 1);
-  };
-
-  this.advanceUntilEndOfWord = function() {
-    var length = 1;
-    var endWordIndex = this.textIndex;
-    while (true) {
-      endWordIndex = endWordIndex + length;
-      if (!_.contains(symbols+" ", this.text[endWordIndex])) {
-        break;
-      }
-    }
-    this.textIndex = endWordIndex;
-    return endWordIndex;
+  this.isInBlockComment = function() {
+    return this.hasMoreText() && this.text.slice(this.textIndex, this.textIndex + 2) !== BLOCK_COMMENT_END;
   };
 
   this.isStartOfWord = function() {
-    return this.text.slice(this.textIndex).match(/[a-zA-Z]/);
+    return this.hasMoreText() && this.text[this.textIndex].match(/[a-zA-Z_]/);
   };
 
   this.isInWord = function() {
-    return this.textIndex < this.text.length && this.text[this.textIndex].match(/[a-zA-Z0-9\$]/);
+    return this.hasMoreText() && this.text[this.textIndex].match(/[a-zA-Z0-9_]/);
+  };
+
+  this.isIntegerStart = function() {
+    return this.hasMoreText() && this.text[this.textIndex].match(/[0-9]/);
+  };
+
+  this.isInInteger = function() {
+    return this.hasMoreText() && this.text[this.textIndex].match(/[0-9]/);
   };
 
   this.isSymbol = function() {
-    return _.contains(symbols, this.text[this.textIndex]);
+    return _.contains(SYMBOLS, this.text[this.textIndex]);
   };
 
   this.isStartOfString = function() {
-    return this.textIndex < this.text.length && this.text[this.textIndex] === '"';
+    return this.hasMoreText() && this.text[this.textIndex] === '"';
   };
 
   this.isInString = function() {
-    return this.textIndex < this.text.length && this.text[this.textIndex].match(/[^"]/) !== null;
-  };
-
-  this.advanceUntil = function(string, length) {
-    while (this.textIndex < this.text.length - length) {
-      if (this.text.slice(this.textIndex, this.textIndex + length) === string) {
-        this.textIndex = this.textIndex + length;
-        tokenStartIndex = this.textIndex;
-        break;
-      }
-      this.textIndex += 1;
-    }
-    return this.textIndex;
+    return this.hasMoreText() && this.text[this.textIndex].match(/[^"]/) !== null;
   };
 }
 
+Tokenizer.cleanUp = function(lines) {
+  return Tokenizer.removeEmptyLines(Tokenizer.removeInlineComments(lines));
+};
+
 Tokenizer.removeInlineComments = function(lines) {
   return _.chain(lines).map(function(line){
-    var indexOf = line.indexOf(INLINE_COMMENT);
+    // deal with the special case of block comments like /* *//* */
+    var indexOf = line.indexOf(BLOCK_COMMENT_END + BLOCK_COMMENT_START);
+    if (indexOf > -1) {
+      line = line.replace(BLOCK_COMMENT_END + BLOCK_COMMENT_START, '');
+    }
+
+    // remove inline comments
+    indexOf = line.indexOf(INLINE_COMMENT);
     if (indexOf > -1) {
       line = line.slice(0, indexOf);
     }
+
+    // trim whitespace from the line
     return line.replace(/^\s+|\s+$/g, '');
-  }).reject(function(line){
-    return line.length === 0;
   }).value();
 };
 
+Tokenizer.removeEmptyLines = function(lines) {
+  return _.reject(lines, function(line){
+    return line.length === 0;
+  });
+};
+
 /**
- * Returns true if there are more tokns in the stream
+ * Returns true if there are more tokens in the stream
  */
 Tokenizer.prototype.hasMoreTokens = function() {
+  return this.hasMoreText();
+};
+
+/**
+ * Returns true if there is more text to parse
+ */
+Tokenizer.prototype.hasMoreText = function() {
   return this.textIndex < this.text.length;
 };
 
 /**
  * Gets the next token from the input and makes it the current token
  */
-// Strings
-// Whitespace
-// etc
 Tokenizer.prototype.advance = function() {
-  if (this.textIndex >= this.text.length) return;
-  var tokenStartIndex = this.textIndex;
-  var wasInWord = false;
-  var wasInSymbol = false;
-  var wasInString = false;
+  // no more tokens
+  if (!this.hasMoreText()) {
+    this.currentToken = undefined;
+    return;
+  }
 
   // ignore any whitespace
-  while (this.text[this.textIndex] === " ") {
+  if (this.text[this.textIndex] === " ") {
     this.textIndex++;
-    tokenStartIndex++;
+    this.advance();
+    return;
   }
+
+  // save the current index as it is the start of our token
+  var tokenStartIndex = this.textIndex;
 
   // ignore block comments
   if (this.isStartOfBlockComment()) {
-    this.advanceUntilEndOfBlockComment();
-    tokenStartIndex = this.textIndex;
+    while (this.isInBlockComment()) {
+      this.textIndex++;
+    }
+    this.textIndex = this.textIndex + BLOCK_COMMENT_END.length;
+    this.advance();
+    return;
   }
 
-  // ignore any whitespace
-  while (this.text[this.textIndex] === " ") {
+  // if we are in a string go to the end of it then return it
+  if (this.isIntegerStart()) {
     this.textIndex++;
-    tokenStartIndex++;
+    while (this.isInInteger()) {
+      this.textIndex++;
+    }
+    this.textIndex++;
+
+    this.currentToken = new IntegerConstant(this.text.slice(tokenStartIndex, this.textIndex));
+    return;
   }
 
   // if we are in a string go to the end of it then return it
   if (this.isStartOfString()) {
-    wasInString = true;
     this.textIndex++;
     while (this.isInString()) {
       this.textIndex++;
     }
     this.textIndex++;
-  }
-  if (wasInString) {
+
     // return the string without the quotes
-    this.currentToken = this.text.slice(tokenStartIndex + 1, this.textIndex - 1);
+    this.currentToken = new StringConstant(this.text.slice(tokenStartIndex + 1, this.textIndex - 1));
     return;
   }
 
   // if we are in a word go to the end of it then return it
-  while (this.isInWord()) {
-    wasInWord = true;
+  while (this.isStartOfWord()) {
     this.textIndex++;
-  }
-  if (wasInWord) {
-    this.currentToken = this.text.slice(tokenStartIndex, this.textIndex);
+
+    while (this.isInWord()) {
+      this.textIndex++;
+    }
+
+    // A word can be a keyword or an indentifier
+    var word = this.text.slice(tokenStartIndex, this.textIndex);
+    if (_.contains(keywords, word)) {
+      this.currentToken = new Keyword(word);
+    } else {
+      this.currentToken = new Identifier(word);
+    }
     return;
   }
 
   // if it is a symbol
   if (this.isSymbol()) {
-    wasInSymbol = true;
     this.textIndex++;
-  }
-  if (wasInSymbol) {
-    this.currentToken = this.text.slice(tokenStartIndex, this.textIndex);
+
+    this.currentToken = new Symbol(this.text.slice(tokenStartIndex, this.textIndex));
     return;
   }
 };
 
-/**
- * Returns the type of a token
- */
-Tokenizer.tokenType = function(token) {
-  // keyword, symbol, indentifier, int_const, string_const
-};
+function StringConstant(content) {
+  this.type = "stringConstant";
+  this.content = content;
+}
 
-/**
- * Returns the keybord of a "keyword" type token
- */
-Tokenizer.tokenType = function(token) {
-  // class, method, function, constructor
-  // int, boolean, char, void
-  // var, static, field, let, do, if, else, while, return, true, false, null, this
-};
+function IntegerConstant(content) {
+  this.type = "integerConstant";
+  this.content = content;
+}
 
-/**
- * Returns the symbol for a token
- */
-Tokenizer.symbol = function(token) {
-};
+function Keyword(content) {
+  this.type = "keyword";
+  this.content = content;
+}
 
-/**
- * Returns the identifier for a token
- */
-Tokenizer.identifier = function(token) {
-};
+function Identifier(content) {
+  this.type = "identifier";
+  this.content = content;
+}
 
-/**
- * Returns the integer value for a token
- */
-Tokenizer.intVal = function(token) {
-};
-
-/**
- * Returns the string value for a token
- */
-Tokenizer.stringVal = function(token) {
-};
-
-function Expression() {
-  this.terminated = terminated;
-  this.children = children;
-  this.value = value;
-  this.type;
+function Symbol(content) {
+  this.type = "symbol";
+  this.content = content;
 }
