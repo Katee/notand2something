@@ -29,7 +29,10 @@ getFilesOfExtension(inPath, options.inputExtension, options.outputExtension).the
   });
 
   _.each(files, function(file){
-    var tokenizer = new Tokenizer(file.contents);
-    // TODO
+    var tokenizer = new Tokenizer(file.content);
+    while (tokenizer.hasMoreTokens()) {
+      tokenizer.advance();
+      console.log("'%s'", tokenizer.currentToken);
+    }
   });
 }).done();
