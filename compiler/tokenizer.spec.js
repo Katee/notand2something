@@ -27,10 +27,9 @@ describe("Comments", function() {
     expect(_.first(tokens).content).toBe("return");
   });
 
-  it("block comments can contain quotes", function() {
-    var tokenizer = new Tokenizer('/* "comment" */return;');
-    var tokens = getAllNonCommentTokens(tokenizer);
-    expect(_.first(tokens).content).toBe("return");
+  it("block comments can contain double quotes", function() {
+    var tokenizer = new Tokenizer('/* "comment" */');
+    expect((tokenizer.advance()).content).toBe('/* "comment" */');
   });
 
   it("block comments can contain //", function() {
@@ -71,21 +70,30 @@ describe("Identifiers", function() {
 
 describe("Strings", function() {
 
-  it("are double", function() {
+  it("are double quoted", function() {
     var tokenizer = new Tokenizer('let string = "A double quoted string";');
     var tokens = getAllTokens(tokenizer);
     expect(tokens[3].content).toBe("A double quoted string");
   });
 
-  it("newlines are allowed", function() {
-    var tokenizer = new Tokenizer('let string = "this string has\ntwo lines";');
-    var tokens = getAllTokens(tokenizer);
-    expect(tokens[3].content).toBe("this string has\ntwo lines");
+  it("may not contain newlines", function() {
+    var tokenizer = new Tokenizer('"this string has\ntwo lines";');
+    expect(tokenizer.advance).toThrow();
   });
 
 });
 
 describe("Integers", function() {
+
+  it("are made of digits", function() {
+    var tokenizer = new Tokenizer('1234');
+    expect((tokenizer.advance()).content).toBe('1234');
+  });
+
+  it("cannot be negative", function() {
+    var tokenizer = new Tokenizer('-1234');
+    expect((tokenizer.advance()).type).not.toBe('integerConstant');
+  });
 
   it("have a maximum value", function() {
     var tokenizer = new Tokenizer('32768');

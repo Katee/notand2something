@@ -21,7 +21,7 @@ var LINE_ENDING = '\n';
 function Tokenizer(fileContents) {
   // normalize line endings
   this.text = fileContents.split('\n').join(LINE_ENDING);
-  this.textIndex = 0;
+  this.index = 0;
 
   /**
    * The current token, can become the next token by calling 'advance'
@@ -33,7 +33,7 @@ function Tokenizer(fileContents) {
  * Returns true if there is more text to parse
  */
 Tokenizer.prototype.hasMoreText = function() {
-  return this.textIndex < this.text.length;
+  return this.index < this.text.length;
 };
 
 /**
@@ -41,13 +41,14 @@ Tokenizer.prototype.hasMoreText = function() {
  */
 Tokenizer.prototype.setToken = function(token) {
   this.currentToken = token;
-  this.advanceOverWhitespace();
+  this.consumeWhitespace();
+  return token;
 };
 
 // advances until something that isn't whitespace
-Tokenizer.prototype.advanceOverWhitespace = function() {
-  while (this.isWhitespace()) {
-    this.textIndex++;
+Tokenizer.prototype.consumeWhitespace = function() {
+  while (this.hasMoreText() && isWhitespace(this.text, this.index)) {
+    this.index++;
   }
 };
 
@@ -61,125 +62,138 @@ Tokenizer.prototype.advance = function() {
   }
 
   // ignore any whitespace
-  this.advanceOverWhitespace();
+  this.consumeWhitespace();
 
   // save the current index as it is the start of our token
-  var tokenStartIndex = this.textIndex;
+  var tokenStartIndex = this.index;
 
-  // ignore inline comments
-  if (this.isInlineCommentStart()) {
-    this.textIndex = this.textIndex + INLINE_COMMENT.length;
-    while (this.isInlineCommentPart()) {
-      this.textIndex++;
-    }
-    // offset by one to ignore the newline if not at end of string
-    var tokenEnd = this.textIndex - (this.textIndex < this.text.length ? 1 : 0);
-    return this.setToken(new Comment(this.text.slice(tokenStartIndex, tokenEnd)));
-  }
-
-  // ignore block comments
-  if (this.isBlockCommentStart()) {
-    while (this.isBlockCommentPart()) {
-      this.textIndex++;
-    }
-    this.textIndex = this.textIndex + BLOCK_COMMENT_END.length;
-    return this.setToken(new Comment(this.text.slice(tokenStartIndex, this.textIndex)));
-  }
-
-  // if we are in a string go to the end of it then return it
-  if (this.isIntegerPart()) {
-    this.textIndex++;
-    while (this.isIntegerPart()) {
-      this.textIndex++;
-    }
-
-    var integer = this.text.slice(tokenStartIndex, this.textIndex);
-    if (Number(integer) <= MAX_INTEGER && Number(integer) >= MIN_INTEGER) {
-      return this.setToken(new IntegerConstant(integer));
-    } else {
-      throw {name: "IntegerOutOfBounds", message: integer + ' is not in the range ' + MIN_INTEGER + '..' + MAX_INTEGER};
-    }
-  }
-
-  // if we are in a string go to the end of it then return it
-  if (this.isStringStart()) {
-    this.textIndex++;
-    while (this.isStringPart()) {
-      this.textIndex++;
-    }
-    this.textIndex++;
-
-    // return the string without the quotes
-    return this.setToken(new StringConstant(this.text.slice(tokenStartIndex + 1, this.textIndex - 1)));
-  }
-
-  // if we are in a word go to the end of it then return it
-  while (this.isWordStart()) {
-    this.textIndex++;
-
-    while (this.isWordPart()) {
-      this.textIndex++;
-    }
-
-    // A word can be a keyword or an indentifier
-    var word = this.text.slice(tokenStartIndex, this.textIndex);
-    if (_.contains(KEYWORDS, word)) {
-      return this.setToken(new Keyword(word));
-    } else {
-      return this.setToken(new Identifier(word));
-    }
-  }
-
-  // if it is a symbol
-  if (this.isSymbol()) {
-    this.textIndex++;
-    return this.setToken(new Symbol(this.text.slice(tokenStartIndex, this.textIndex)));
+  if (isIntegerPart(this.text, this.index)) {
+    // integer parts and start are the same
+    return this.consumeInteger(tokenStartIndex);
+  } else if (isInlineCommentStart(this.text, this.index)) {
+    return this.consumeInlineComment(tokenStartIndex);
+  } else if (isBlockCommentStart(this.text, this.index)) {
+    return this.consumeBlockComment(tokenStartIndex);
+  } else if (isStringStart(this.text, this.index)) {
+    return this.consumeString(tokenStartIndex);
+  } else if (isWordStart(this.text, this.index)) {
+    return this.consumeWord(tokenStartIndex);
+  } else if (isSymbol(this.text, this.index)) {
+    return this.consumeSymbol(tokenStartIndex);
+  } else {
+    throw {name: "SyntaxError", message: "Not sure what happened"};
   }
 };
 
-Tokenizer.prototype.isBlockCommentStart = function() {
-  return this.hasMoreText() && this.text.slice(this.textIndex, this.textIndex + BLOCK_COMMENT_START.length) === BLOCK_COMMENT_START;
+Tokenizer.prototype.consumeInteger = function(tokenStartIndex) {
+  do {
+    this.index++;
+  } while (this.hasMoreText() && isIntegerPart(this.text, this.index));
+
+  var integer = this.text.slice(tokenStartIndex, this.index);
+  if (Number(integer) <= MAX_INTEGER && Number(integer) >= MIN_INTEGER) {
+    return this.setToken(new IntegerConstant(integer));
+  } else {
+    throw {name: "IntegerOutOfBounds", message: integer + ' is not in the range ' + MIN_INTEGER + '..' + MAX_INTEGER};
+  }
 };
 
-Tokenizer.prototype.isBlockCommentPart = function() {
-  return this.hasMoreText() && this.text.slice(this.textIndex, this.textIndex + 2) !== BLOCK_COMMENT_END;
+Tokenizer.prototype.consumeInlineComment = function(tokenStartIndex) {
+  this.index = this.index + INLINE_COMMENT.length;
+
+  while (this.hasMoreText() && isAllowedInInlineComments(this.text, this.index)) {
+    this.index++;
+  }
+
+  // offset by one to ignore the newline if not at end of string
+  var tokenEnd = this.index - (this.index < this.text.length ? 1 : 0);
+  return this.setToken(new Comment(this.text.slice(tokenStartIndex, tokenEnd)));
 };
 
-Tokenizer.prototype.isInlineCommentStart = function() {
-  return this.hasMoreText() && (this.text.slice(this.textIndex, this.textIndex + INLINE_COMMENT.length) === INLINE_COMMENT);
+Tokenizer.prototype.consumeBlockComment = function(tokenStartIndex) {
+  while (this.hasMoreText() && isBlockCommentPart(this.text, this.index)) {
+    this.index++;
+  }
+  this.index = this.index + BLOCK_COMMENT_END.length;
+  return this.setToken(new Comment(this.text.slice(tokenStartIndex, this.index)));
 };
 
-Tokenizer.prototype.isInlineCommentPart = function() {
-  return this.hasMoreText() && this.text[this.textIndex].match(LINE_ENDING) === null;
+Tokenizer.prototype.consumeString = function(tokenStartIndex) {
+  do {
+    this.index++;
+  } while (this.hasMoreText() && isStringPart(this.text, this.index))
+
+  this.index++;// consume closing quote
+
+  // return the string without the quotes
+  return this.setToken(new StringConstant(this.text.slice(tokenStartIndex + 1, this.index - 1)));
 };
 
-Tokenizer.prototype.isWordStart = function() {
-  return this.hasMoreText() && this.text[this.textIndex].match(/[a-zA-Z_]/);
+Tokenizer.prototype.consumeWord = function(tokenStartIndex) {
+  do {
+    this.index++;
+  } while (this.hasMoreText() && isAllowedInWord(this.text, this.index))
+
+  // A word can be a keyword or an indentifier
+  var word = this.text.slice(tokenStartIndex, this.index);
+  if (_.contains(KEYWORDS, word)) {
+    return this.setToken(new Keyword(word));
+  } else {
+    return this.setToken(new Identifier(word));
+  }
 };
 
-Tokenizer.prototype.isWordPart = function() {
-  return this.hasMoreText() && this.text[this.textIndex].match(/[a-zA-Z0-9_]/);
+Tokenizer.prototype.consumeSymbol = function(tokenStartIndex) {
+  this.index++;
+  return this.setToken(new Symbol(this.text.slice(tokenStartIndex, this.index)));
 };
 
-Tokenizer.prototype.isIntegerPart = function() {
-  return this.hasMoreText() && this.text[this.textIndex].match(/[0-9]/);
-};
+function isBlockCommentStart(text, index) {
+  return text.slice(index, index + BLOCK_COMMENT_START.length) === BLOCK_COMMENT_START;
+}
 
-Tokenizer.prototype.isSymbol = function() {
-  return _.contains(SYMBOLS, this.text[this.textIndex]);
-};
+function isBlockCommentPart(text, index) {
+  return text.slice(index, index + 2) !== BLOCK_COMMENT_END;
+}
 
-Tokenizer.prototype.isStringStart = function() {
-  return this.hasMoreText() && this.text[this.textIndex] === '"';
-};
+function isInlineCommentStart(text, index) {
+  return text.slice(index, index + INLINE_COMMENT.length) === INLINE_COMMENT;
+}
 
-Tokenizer.prototype.isStringPart = function() {
-  return this.hasMoreText() && this.text[this.textIndex].match(/[^"]/) !== null;
-};
+function isAllowedInInlineComments(text, index) {
+  return text[index].match(LINE_ENDING) === null;
+}
 
-Tokenizer.prototype.isWhitespace = function() {
-  return this.hasMoreText() && this.text[this.textIndex].match(/\s/) !== null;
-};
+function isWordStart(text, index) {
+  return text[index].match(/[a-zA-Z_]/);
+}
+
+function isAllowedInWord(text, index) {
+  return text[index].match(/[a-zA-Z0-9_]/);
+}
+
+function isIntegerPart(text, index) {
+  return text[index].match(/[0-9]/);
+}
+
+function isSymbol(text, index) {
+  return _.contains(SYMBOLS, text[index]);
+}
+
+function isStringStart(text, index) {
+  return text[index] === '"';
+}
+
+function isStringPart(text, index) {
+  if (text[index].match('\n')) {
+    throw {name: 'SyntaxError', message: 'String does not end before end of line.'};
+  }
+  return text[index].match(/[^"]/) !== null;
+}
+
+function isWhitespace(text, index) {
+  return text[index].match(/\s/) !== null;
+}
 
 function StringConstant(content) {
   this.type = "stringConstant";
