@@ -10,46 +10,52 @@ var KEYWORDS = [
   "class", "constructor", "function", "method", "field", "static",
   "var", "method", "field", "static", "var", "int", "char",
   "boolean", "void", "true", "false", "null", "this",
-  "let", "do", "if", "else", "while", "return"
-];
-
-var MIN_INTEGER = 0;
-var MAX_INTEGER = 32767;
-
+  "let", "do", "if", "else", "while", "return" ];
+var STRING_QUOTE = '"';
+var DIGIT = /[0-9]/;
 var LINE_ENDING = '\n';
+
+function Token(tag, content) {
+  this.tag = tag;
+  this.content = content;
+}
 
 function Tokenizer(fileContents) {
   // normalize line endings
   this.text = fileContents.split('\n').join(LINE_ENDING);
-  this.index = 0;
 
   /**
    * The current token, can become the next token by calling 'advance'
    */
   this.currentToken;
+  this.index = 0;
+  this.line = 1;
+
+  // clear any whitespace at the beginning of the file
+  this.consumeWhitespace();
 }
 
-/**
- * Returns true if there is more text to parse
- */
 Tokenizer.prototype.hasMoreText = function() {
-  return this.index < this.text.length;
+  return this.curChar() !== undefined;
+};
+
+Tokenizer.prototype.curChar = function() {
+  return this.text[this.index];
 };
 
 /**
  * set the current token and advance over any whitespace
  */
 Tokenizer.prototype.setToken = function(token) {
+  // keep the line number for use in error messages
+  token.line = this.line;
   this.currentToken = token;
-  this.consumeWhitespace();
-  return token;
-};
 
-// advances until something that isn't whitespace
-Tokenizer.prototype.consumeWhitespace = function() {
-  while (this.hasMoreText() && isWhitespace(this.text, this.index)) {
-    this.index++;
-  }
+  // clear any whitespace, this saves us from having
+  // a undefined token when a file ends in whitespace
+  this.consumeWhitespace();
+
+  return token;
 };
 
 /**
@@ -61,166 +67,98 @@ Tokenizer.prototype.advance = function() {
     return this.setToken(undefined);
   }
 
-  // ignore any whitespace
-  this.consumeWhitespace();
-
   // save the current index as it is the start of our token
   var tokenStartIndex = this.index;
 
-  if (isIntegerPart(this.text, this.index)) {
-    // integer parts and start are the same
-    return this.consumeInteger(tokenStartIndex);
-  } else if (isInlineCommentStart(this.text, this.index)) {
-    return this.consumeInlineComment(tokenStartIndex);
-  } else if (isBlockCommentStart(this.text, this.index)) {
-    return this.consumeBlockComment(tokenStartIndex);
-  } else if (isStringStart(this.text, this.index)) {
-    return this.consumeString(tokenStartIndex);
-  } else if (isWordStart(this.text, this.index)) {
-    return this.consumeWord(tokenStartIndex);
-  } else if (isSymbol(this.text, this.index)) {
-    return this.consumeSymbol(tokenStartIndex);
-  } else {
-    throw {name: "SyntaxError", message: "Not sure what happened"};
+  var methods = ['consumeInteger', 'consumeInlineComment',
+    'consumeBlockComment', 'consumeString', 'consumeWord', 'consumeSymbol'];
+
+  for (i in methods) {
+    var method = methods[i];
+    var token = this[method](tokenStartIndex);
+    if (token !== null) {
+      return this.setToken(token);
+    }
   }
+
+  throw {name: "SyntaxError", message: "Not sure what happened on line " + this.line};
 };
 
 Tokenizer.prototype.consumeInteger = function(tokenStartIndex) {
+  if (!this.curChar().match(DIGIT)) return null;
+
   do {
     this.index++;
-  } while (this.hasMoreText() && isIntegerPart(this.text, this.index));
+  } while (this.hasMoreText() && this.curChar().match(DIGIT));
 
-  var integer = this.text.slice(tokenStartIndex, this.index);
-  if (Number(integer) <= MAX_INTEGER && Number(integer) >= MIN_INTEGER) {
-    return this.setToken(new IntegerConstant(integer));
-  } else {
-    throw {name: "IntegerOutOfBounds", message: integer + ' is not in the range ' + MIN_INTEGER + '..' + MAX_INTEGER};
-  }
+  return new Token('integer', this.text.slice(tokenStartIndex, this.index));
 };
 
 Tokenizer.prototype.consumeInlineComment = function(tokenStartIndex) {
+  if (!(this.text.substr(this.index, INLINE_COMMENT.length) === INLINE_COMMENT)) return null;
+
   this.index = this.index + INLINE_COMMENT.length;
 
-  while (this.hasMoreText() && isAllowedInInlineComments(this.text, this.index)) {
+  while (this.hasMoreText() && !this.curChar().match(LINE_ENDING)) {
     this.index++;
   }
 
-  // offset by one to ignore the newline if not at end of string
-  var tokenEnd = this.index - (this.index < this.text.length ? 1 : 0);
-  return this.setToken(new Comment(this.text.slice(tokenStartIndex, tokenEnd)));
+  return new Token('comment', this.text.slice(tokenStartIndex, this.index));
 };
 
 Tokenizer.prototype.consumeBlockComment = function(tokenStartIndex) {
-  while (this.hasMoreText() && isBlockCommentPart(this.text, this.index)) {
+  if (!(this.text.substr(this.index, BLOCK_COMMENT_START.length) === BLOCK_COMMENT_START)) return null;
+
+  while (this.hasMoreText() && this.text.substr(this.index, BLOCK_COMMENT_END.length) !== BLOCK_COMMENT_END) {
     this.index++;
   }
   this.index = this.index + BLOCK_COMMENT_END.length;
-  return this.setToken(new Comment(this.text.slice(tokenStartIndex, this.index)));
+  return new Token('comment', this.text.slice(tokenStartIndex, this.index));
 };
 
 Tokenizer.prototype.consumeString = function(tokenStartIndex) {
+  if (!(this.curChar() === STRING_QUOTE)) return null;
+
   do {
     this.index++;
-  } while (this.hasMoreText() && isStringPart(this.text, this.index))
+    if (!this.hasMoreText() || this.curChar().match(LINE_ENDING)) {
+      throw {name: 'SyntaxError', message: 'Expected end of string on line ' + this.line};
+    }
+  } while (!(this.curChar() === STRING_QUOTE))
 
-  this.index++;// consume closing quote
+  // consume closing quote
+  this.index++;
 
-  // return the string without the quotes
-  return this.setToken(new StringConstant(this.text.slice(tokenStartIndex + 1, this.index - 1)));
+  // get the string without quotes
+  var string = this.text.slice(tokenStartIndex + 1, this.index - 1);
+  return new Token('stringConstant', string);
 };
 
 Tokenizer.prototype.consumeWord = function(tokenStartIndex) {
+  if (!this.curChar().match(/[a-zA-Z_]/)) return null;
+
   do {
     this.index++;
-  } while (this.hasMoreText() && isAllowedInWord(this.text, this.index))
+  } while (this.hasMoreText() && this.curChar().match(/[a-zA-Z0-9_]/))
 
   // A word can be a keyword or an indentifier
   var word = this.text.slice(tokenStartIndex, this.index);
-  if (_.contains(KEYWORDS, word)) {
-    return this.setToken(new Keyword(word));
-  } else {
-    return this.setToken(new Identifier(word));
-  }
+  var tag = _.contains(KEYWORDS, word) ? 'keyword' : 'identifier';
+  return new Token(tag, word);
 };
 
 Tokenizer.prototype.consumeSymbol = function(tokenStartIndex) {
+  if (!_.contains(SYMBOLS, this.curChar())) return null;
   this.index++;
-  return this.setToken(new Symbol(this.text.slice(tokenStartIndex, this.index)));
+  return new Token('symbol', this.text.substr(tokenStartIndex, 1));
 };
 
-function isBlockCommentStart(text, index) {
-  return text.slice(index, index + BLOCK_COMMENT_START.length) === BLOCK_COMMENT_START;
-}
-
-function isBlockCommentPart(text, index) {
-  return text.slice(index, index + 2) !== BLOCK_COMMENT_END;
-}
-
-function isInlineCommentStart(text, index) {
-  return text.slice(index, index + INLINE_COMMENT.length) === INLINE_COMMENT;
-}
-
-function isAllowedInInlineComments(text, index) {
-  return text[index].match(LINE_ENDING) === null;
-}
-
-function isWordStart(text, index) {
-  return text[index].match(/[a-zA-Z_]/);
-}
-
-function isAllowedInWord(text, index) {
-  return text[index].match(/[a-zA-Z0-9_]/);
-}
-
-function isIntegerPart(text, index) {
-  return text[index].match(/[0-9]/);
-}
-
-function isSymbol(text, index) {
-  return _.contains(SYMBOLS, text[index]);
-}
-
-function isStringStart(text, index) {
-  return text[index] === '"';
-}
-
-function isStringPart(text, index) {
-  if (text[index].match('\n')) {
-    throw {name: 'SyntaxError', message: 'String does not end before end of line.'};
+// advances until something that isn't whitespace
+Tokenizer.prototype.consumeWhitespace = function() {
+  while (this.hasMoreText() && this.curChar().match(/\s/)) {
+    if (this.curChar().match(LINE_ENDING)) {
+      this.line++;
+    }
+    this.index++;
   }
-  return text[index].match(/[^"]/) !== null;
-}
-
-function isWhitespace(text, index) {
-  return text[index].match(/\s/) !== null;
-}
-
-function StringConstant(content) {
-  this.type = "stringConstant";
-  this.content = content;
-}
-
-function IntegerConstant(content) {
-  this.type = "integerConstant";
-  this.content = content;
-}
-
-function Keyword(content) {
-  this.type = "keyword";
-  this.content = content;
-}
-
-function Identifier(content) {
-  this.type = "identifier";
-  this.content = content;
-}
-
-function Symbol(content) {
-  this.type = "symbol";
-  this.content = content;
-}
-
-function Comment(content) {
-  this.type = "comment";
-  this.content = content;
-}
+};

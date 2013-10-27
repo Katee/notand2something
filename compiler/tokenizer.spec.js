@@ -4,9 +4,9 @@ var Tokenizer = require('./tokenizer');
 describe("Comments", function() {
 
   it("are a type of token", function() {
-    var tokenizer = new Tokenizer("// comment");
+    var tokenizer = new Tokenizer("/* comment */");
     var tokens = getAllTokens(tokenizer);
-    expect(_.first(tokens).content).toBe("// comment");
+    expect(_.first(tokens).content).toBe("/* comment */");
   });
 
   it("can be inline", function() {
@@ -44,6 +44,12 @@ describe("Comments", function() {
     expect(_.first(tokens).content).toBe("return");
   });
 
+  it("inline comments never include the newline", function() {
+    var tokenizer = new Tokenizer("// comment\n");
+    var token = tokenizer.advance();
+    expect(token.content.match('\n')).toBe(null);
+  });
+
 });
 
 describe("Identifiers", function() {
@@ -51,19 +57,19 @@ describe("Identifiers", function() {
   it("may contain digits", function() {
     var tokenizer = new Tokenizer('x1;');
     tokenizer.advance();
-    expect(tokenizer.currentToken).toEqual({type: "identifier", content: "x1"});
+    expect(_.pick(tokenizer.currentToken, ['tag', 'content'])).toEqual({tag: "identifier", content: "x1"});
   });
 
   it("may not start with a digit", function() {
     var tokenizer = new Tokenizer('1x;');
     tokenizer.advance();
-    expect(tokenizer.currentToken.type).not.toEqual("identifier");
+    expect(tokenizer.currentToken.tag).not.toEqual("identifier");
   });
 
   it("may start with and contain underscores", function() {
     var tokenizer = new Tokenizer('_x_');
     tokenizer.advance();
-    expect(tokenizer.currentToken).toEqual({type: "identifier", content: "_x_"});
+    expect(_.pick(tokenizer.currentToken, ['tag', 'content'])).toEqual({tag: "identifier", content: "_x_"});
   });
 
 });
@@ -81,6 +87,11 @@ describe("Strings", function() {
     expect(tokenizer.advance).toThrow();
   });
 
+  it("must terminate", function() {
+    var tokenizer = new Tokenizer('"this string');
+    expect(tokenizer.advance).toThrow();
+  });
+
 });
 
 describe("Integers", function() {
@@ -92,12 +103,7 @@ describe("Integers", function() {
 
   it("cannot be negative", function() {
     var tokenizer = new Tokenizer('-1234');
-    expect((tokenizer.advance()).type).not.toBe('integerConstant');
-  });
-
-  it("have a maximum value", function() {
-    var tokenizer = new Tokenizer('32768');
-    expect(tokenizer.advance).toThrow();
+    expect((tokenizer.advance()).tag).not.toBe('integerConstant');
   });
 
 });
@@ -114,6 +120,17 @@ describe("Statements", function() {
     var tokenizer = new Tokenizer('let x=y;');
     var tokens = _.map(getAllTokens(tokenizer), getTokenContent);
     expect(tokens).toEqual(['let', 'x', '=', 'y', ';']);
+  });
+
+});
+
+describe("Metadata", function() {
+
+  it("contains the line of the source file where the token came from", function() {
+    var tokenizer = new Tokenizer('1\n2\n//comment\n4');
+    var tokens = getAllTokens(tokenizer);
+    expect(tokens[0].line).toEqual(1);
+    expect(_.last(tokens).line).toEqual(4);
   });
 
 });
@@ -139,5 +156,5 @@ function getTokenContent(token) {
 }
 
 function isTokenComment(token) {
-  return token.type === "comment";
+  return token.tag === "comment";
 }
