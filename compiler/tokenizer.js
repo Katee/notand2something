@@ -91,7 +91,7 @@ Tokenizer.prototype.consumeInteger = function(tokenStartIndex) {
     this.index++;
   } while (this.hasMoreText() && this.curChar().match(DIGIT));
 
-  return new Token('integer', this.text.slice(tokenStartIndex, this.index));
+  return new Token('integerConstant', this.text.slice(tokenStartIndex, this.index));
 };
 
 Tokenizer.prototype.consumeInlineComment = function(tokenStartIndex) {

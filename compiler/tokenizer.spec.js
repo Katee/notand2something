@@ -4,49 +4,48 @@ var Tokenizer = require('./tokenizer');
 describe("Comments", function() {
 
   it("are a type of token", function() {
-    var tokenizer = new Tokenizer("/* comment */");
-    var tokens = getAllTokens(tokenizer);
+    var tokens = getAllTokens("/* comment */");
     expect(_.first(tokens).content).toBe("/* comment */");
   });
 
   it("can be inline", function() {
-    var tokenizer = new Tokenizer("// inline comment\nreturn;// another inline comment");
-    var tokens = getAllNonCommentTokens(tokenizer);
+    var tokens = getAllTokens("// inline comment\nreturn;// another inline comment");
+    tokens = _.reject(tokens, isTokenComment);
     expect(_.first(tokens).content).toBe("return");
   });
 
   it("can be block", function() {
-    var tokenizer = new Tokenizer("/* block comment \n with newline */return;/* another block */");
-    var tokens = getAllNonCommentTokens(tokenizer);
+    var tokens = getAllTokens("/* block comment \n with newline */return;/* another block */");
+    tokens = _.reject(tokens, isTokenComment);
     expect(_.first(tokens).content).toBe("return");
   });
 
   it("block comments can come directly after another block comment", function() {
-    var tokenizer = new Tokenizer("/* block comment \n with newline *//* another block */return;");
-    var tokens = getAllNonCommentTokens(tokenizer);
+    var tokens = getAllTokens("/* block comment \n with newline *//* another block */return;");
+    tokens = _.reject(tokens, isTokenComment);
     expect(_.first(tokens).content).toBe("return");
   });
 
   it("block comments can contain double quotes", function() {
-    var tokenizer = new Tokenizer('/* "comment" */');
-    expect((tokenizer.advance()).content).toBe('/* "comment" */');
+    var tokens = getAllTokens('/* "comment" */');
+    expect(tokens[0].content).toBe('/* "comment" */');
   });
 
   it("block comments can contain //", function() {
-    var tokenizer = new Tokenizer('/* //comment */return;');
-    var tokens = getAllNonCommentTokens(tokenizer);
+    var tokens = getAllTokens('/* //comment */return;');
+    tokens = _.reject(tokens, isTokenComment);
     expect(_.first(tokens).content).toBe("return");
   });
 
   it("can end in a comment", function() {
-    var tokenizer = new Tokenizer("return;// comment");
-    var tokens = getAllNonCommentTokens(tokenizer);
+    var tokens = getAllTokens("return;// comment");
+    tokens = _.reject(tokens, isTokenComment);
     expect(_.first(tokens).content).toBe("return");
   });
 
   it("inline comments never include the newline", function() {
-    var tokenizer = new Tokenizer("// comment\n");
-    var token = tokenizer.advance();
+    var tokens = getAllTokens("// comment\n");
+    var token = tokens[0];
     expect(token.content.match('\n')).toBe(null);
   });
 
@@ -55,21 +54,18 @@ describe("Comments", function() {
 describe("Identifiers", function() {
 
   it("may contain digits", function() {
-    var tokenizer = new Tokenizer('x1;');
-    tokenizer.advance();
-    expect(_.pick(tokenizer.currentToken, ['tag', 'content'])).toEqual({tag: "identifier", content: "x1"});
+    var token = getAllTokens('x1;')[0];
+    expect(_.pick(token, ['tag', 'content'])).toEqual({tag: "identifier", content: "x1"});
   });
 
   it("may not start with a digit", function() {
-    var tokenizer = new Tokenizer('1x;');
-    tokenizer.advance();
-    expect(tokenizer.currentToken.tag).not.toEqual("identifier");
+    var token = getAllTokens('1x;')[0];
+    expect(token.tag).not.toEqual("identifier");
   });
 
   it("may start with and contain underscores", function() {
-    var tokenizer = new Tokenizer('_x_');
-    tokenizer.advance();
-    expect(_.pick(tokenizer.currentToken, ['tag', 'content'])).toEqual({tag: "identifier", content: "_x_"});
+    var token = getAllTokens('_x_')[0];
+    expect(_.pick(token, ['tag', 'content'])).toEqual({tag: "identifier", content: "_x_"});
   });
 
 });
@@ -77,8 +73,7 @@ describe("Identifiers", function() {
 describe("Strings", function() {
 
   it("are double quoted", function() {
-    var tokenizer = new Tokenizer('let string = "A double quoted string";');
-    var tokens = getAllTokens(tokenizer);
+    var tokens = getAllTokens('let string = "A double quoted string";');
     expect(tokens[3].content).toBe("A double quoted string");
   });
 
@@ -97,13 +92,13 @@ describe("Strings", function() {
 describe("Integers", function() {
 
   it("are made of digits", function() {
-    var tokenizer = new Tokenizer('1234');
-    expect((tokenizer.advance()).content).toBe('1234');
+    var token = getAllTokens('1234')[0];
+    expect(token.content).toBe('1234');
   });
 
   it("cannot be negative", function() {
-    var tokenizer = new Tokenizer('-1234');
-    expect((tokenizer.advance()).tag).not.toBe('integerConstant');
+    var token = getAllTokens('-1234')[0];
+    expect(token.tag).not.toBe('integerConstant');
   });
 
 });
@@ -111,14 +106,14 @@ describe("Integers", function() {
 describe("Statements", function() {
 
   it("Tokenizes a let statement", function() {
-    var tokenizer = new Tokenizer('let x = y;');
-    var tokens = _.map(getAllTokens(tokenizer), getTokenContent);
+    var tokens = getAllTokens('let x = y;');
+    tokens = _.map(tokens, getTokenContent);
     expect(tokens).toEqual(['let', 'x', '=', 'y', ';']);
   });
 
   it("whitespace is not required around symbols", function() {
-    var tokenizer = new Tokenizer('let x=y;');
-    var tokens = _.map(getAllTokens(tokenizer), getTokenContent);
+    var tokens = getAllTokens('let x=y;');
+    tokens = _.map(tokens, getTokenContent);
     expect(tokens).toEqual(['let', 'x', '=', 'y', ';']);
   });
 
@@ -127,16 +122,17 @@ describe("Statements", function() {
 describe("Metadata", function() {
 
   it("contains the line of the source file where the token came from", function() {
-    var tokenizer = new Tokenizer('1\n2\n//comment\n4');
-    var tokens = getAllTokens(tokenizer);
+    var tokens = getAllTokens('1\n2\n//comment\n4');
     expect(tokens[0].line).toEqual(1);
     expect(_.last(tokens).line).toEqual(4);
   });
 
 });
 
-// Helper method to that gets all tokens from an initialized tokenizer
-function getAllTokens(tokenizer) {
+// Helper method to that gets all tokens from a string
+function getAllTokens(string) {
+  var tokenizer = new Tokenizer(string);
+
   var tokens = [];
   while (tokenizer.hasMoreText()) {
     tokenizer.advance();
@@ -146,8 +142,7 @@ function getAllTokens(tokenizer) {
 }
 
 // Helper method to that gets all non comment tokens
-function getAllNonCommentTokens(tokenizer) {
-  var tokens = getAllTokens(tokenizer);
+function getAllNonCommentTokens(tokens) {
   return _.reject(tokens, isTokenComment);
 }
 
