@@ -70,12 +70,12 @@ Tokenizer.prototype.advance = function() {
   // save the current index as it is the start of our token
   var tokenStartIndex = this.index;
 
-  var methods = ['consumeInteger', 'consumeInlineComment',
+  var parsers = ['consumeInteger', 'consumeInlineComment',
     'consumeBlockComment', 'consumeString', 'consumeWord', 'consumeSymbol'];
 
-  for (i in methods) {
-    var method = methods[i];
-    var token = this[method](tokenStartIndex);
+  for (i in parsers) {
+    var parser = parsers[i];
+    var token = this[parser](tokenStartIndex);
     if (token !== null) {
       return this.setToken(token);
     }
