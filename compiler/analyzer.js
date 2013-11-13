@@ -292,6 +292,33 @@ Statement.consume = function(tokens) {
   return [null, tokens];
 };
 
+Statement.DoStatement = function(_subroutineCall) {
+  this.tag = "doStatement";
+  this.subroutineCall = _subroutineCall;
+};
+
+Statement.DoStatement.consume = function(tokens) {
+  var token = tokens[0];
+  var remainingTokens = tokens.slice(1);
+
+  if (token.content !== 'do') {
+    return [null, tokens];
+  }
+
+  var subroutineCall = SubroutineCall.consume(remainingTokens);
+  if (subroutineCall[0] === null) {
+    return [null, tokens];
+  }
+  remainingTokens = subroutineCall[1];
+
+  if (remainingTokens[0].content !== ';') {
+    return [null, tokens];
+  }
+  remainingTokens = remainingTokens.slice(1);
+
+  return [new Statement.DoStatement(subroutineCall[0]), remainingTokens];
+};
+
 function AnalyzerError(message) {
   this.name = "AnalyzerError";
   this.message = message;

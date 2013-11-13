@@ -139,6 +139,16 @@ describe('SubroutineCall', function() {
 
 });
 
+describe("Statements", function() {
+
+  it("Can be 'do' statements", function() {
+    var tokens = getAllTokens("do foo.bar();");
+    var doStatement = Statement.DoStatement.consume(tokens)[0];
+    expect(doStatement.tag).toBe('doStatement');
+  });
+
+});
+
 describe("do statements", function() {
 
   /*
