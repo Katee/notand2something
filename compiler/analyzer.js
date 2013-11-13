@@ -11,6 +11,8 @@ var debug = module.exports.debug = true;
 var KEYWORDS_CONSTANTS = ['this', 'true', 'false', 'null'];
 var OPERATORS = ['+', '-', '*', '/', '&', '|', '<', '>', '='];
 var UNARY_OPERATORS = ['-', '~'];
+var MIN_INTEGER = 0;
+var MAX_INTEGER = 32767;
 
 function Term() {
   this.tag = 'term';
@@ -81,8 +83,14 @@ function IntegerConstant(){}
 IntegerConstant.consume = function(tokens){
   var token = tokens[0];
   if (token !== undefined && token.tag === 'integerConstant') {
-    return [token, tokens.slice(1)];
+    var integer = token.content;
+    if (Number(integer) <= MAX_INTEGER && Number(integer) >= MIN_INTEGER) {
+      return [token, tokens.slice(1)];
+    } else {
+      throw {name: "IntegerOutOfBounds", message: integer + ' is not in the range ' + MIN_INTEGER + '..' + MAX_INTEGER};
+    }
   }
+
   return [null, tokens];
 };
 

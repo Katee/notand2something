@@ -9,6 +9,20 @@ var ExpressionList = AnalyzerModule.ExpressionList;
 var SubroutineCall = AnalyzerModule.SubroutineCall;
 var Statement = AnalyzerModule.Statement;
 
+describe('Integer Constants', function() {
+
+  it("have a minimum value", function() {
+    var tokens = getAllTokens('-1');
+    expect(Term.consume, tokens).toThrow();
+  });
+
+  it("have a maximum value", function() {
+    var tokens = getAllTokens('32768');
+    expect(Term.consume, tokens).toThrow();
+  });
+
+});
+
 describe('Terms', function() {
 
   it('can be an integerConstant', function() {
