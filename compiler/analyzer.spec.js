@@ -65,7 +65,6 @@ describe('Terms', function() {
   it('can be an expression in parens', function() {
     var tokens = getAllTokens('(5 * 2)');
     var term = Term.consume(tokens)[0];
-    console.log('term', term);
     expect(term.content.terms.length).toBe(3);
   });
 
@@ -169,8 +168,4 @@ function getAllTokens(string) {
     tokens.push(tokenizer.currentToken);
   }
   return tokens;
-}
-
-function pp(object) {
-  console.log(JSON.stringify(object, null, '  '));
 }
