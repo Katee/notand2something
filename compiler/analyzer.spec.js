@@ -118,6 +118,12 @@ describe('SubroutineCall', function() {
     expect(subroutineCall).toBe(null);
   });
 
+  it("except for this", function() {
+    var tokens = getAllTokens('this.foo()');
+    var subroutineCall = SubroutineCall.consume(tokens)[0];
+    expect(subroutineCall).not.toBe(null);
+  });
+
   it('cant be called on classes', function() {
     var tokens = getAllTokens('ClassName.foo()');
     var subroutineCall = SubroutineCall.consume(tokens)[0];
@@ -139,47 +145,17 @@ describe('SubroutineCall', function() {
 
 });
 
-describe("Statements", function() {
+describe("Statements:", function() {
 
-  it("Can be 'do' statements", function() {
-    var tokens = getAllTokens("do foo.bar();");
-    var doStatement = Statement.DoStatement.consume(tokens)[0];
-    expect(doStatement.tag).toBe('doStatement');
-  });
+  describe("Do statements", function() {
 
-});
-
-describe("do statements", function() {
-
-  /*
-  it("cannot be called on keywords except for this", function() {
-    var tokens = getAllTokens("do return();");
-    var analyzer = new Analyzer(tokens);
-    expect(analyzer.analyze).toThrow();
-
-    tokens = getAllTokens("do this.foo();");
-    analyzer = new Analyzer(tokens);
-    expect(analyzer.analyze).not.toThrow();
-
-    toknes = getAllTokens("do this();");
-    analyzer = new Analyzer(tokens);
-    expect(analyzer.analyze).toThrow();
-  });
-
-  it("if called on a class the subroutine name must also be an identifier", function() {
-    var tokens = getAllTokens("do foo.1();");
-    var analyzer = new Analyzer(tokens);
-    expect(analyzer.analyze).toThrow();
-  });
-
-  it("must be well formed", function() {
-    _.each(['do;', 'do ();', 'do foo(;', 'do foo);'], function(e){
-      var tokens = getAllTokens(e);
-      var analyzer = new Analyzer(tokens);
-      expect(analyzer.analyze).toThrow();
+    it("are just a call to a subroutine wrapped in 'do' and ';'", function() {
+      var tokens = getAllTokens("do foo.bar();");
+      var doStatement = Statement.DoStatement.consume(tokens)[0];
+      expect(doStatement.tag).toBe('doStatement');
     });
+
   });
-  */
 
 });
 
