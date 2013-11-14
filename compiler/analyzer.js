@@ -358,6 +358,31 @@ Statement.LetStatement.consume = function(tokens) {
   return [new Statement.LetStatement(varName[0], expression[0]), remainingTokens];
 };
 
+Statement.ReturnStatement = function (_expression) {
+  this.tag = 'returnStatement';
+  this.expression = _expression;
+};
+
+Statement.ReturnStatement.consume = function(tokens) {
+  if (tokens[0].content !== 'return') {
+    return [null, tokens];
+  }
+  remainingTokens = tokens.slice(1);
+
+  var expression = Expression.consume(remainingTokens);
+  if (expression[0] === null) {
+    return [null, tokens];
+  }
+  remainingTokens = expression[1];
+
+  if (remainingTokens[0].content !== ';') {
+    return [null, tokens];
+  }
+  remainingTokens = remainingTokens.slice(1);
+
+  return [new Statement.ReturnStatement(expression[0]), remainingTokens];
+};
+
 function AnalyzerError(message) {
   this.name = "AnalyzerError";
   this.message = message;

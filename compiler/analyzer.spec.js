@@ -166,6 +166,18 @@ describe("Statements:", function() {
 
   });
 
+  describe("Return statements", function() {
+
+    it("can return an expression", function() {
+      _.each(["return 10;", "return a + b;", "return true;"], function(string){
+        var tokens = getAllTokens(string);
+        var statement = Statement.ReturnStatement.consume(tokens)[0];
+        expect(statement.tag).toBe('returnStatement');
+      })
+    });
+
+  });
+
 });
 
 // Helper method to that gets all tokens from a string
