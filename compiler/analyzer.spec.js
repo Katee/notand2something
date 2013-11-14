@@ -178,6 +178,16 @@ describe("Statements:", function() {
 
   });
 
+  describe("If statements", function() {
+
+    it("can contain single expressions", function() {
+      var tokens = getAllTokens("if (true) {let x = 5;}");
+      var statement = Statement.IfStatement.consume(tokens)[0];
+      expect(statement.tag).toBe('ifStatement');
+    });
+
+  });
+
 });
 
 // Helper method to that gets all tokens from a string

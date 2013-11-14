@@ -289,6 +289,16 @@ ExpressionList.consume = function(tokens) {
 function Statement() {}
 
 Statement.consume = function(tokens) {
+  var parsers = ['LetStatement', 'IfStatement', 'WhileStatement', 'DoStatement', 'ReturnStatement'];
+
+  for (i in parsers) {
+    var parser = parsers[i];
+    var statement = Statement[parser].consume(tokens);
+    if (statement[0] !== null) {
+      return statement;
+    }
+  }
+
   return [null, tokens];
 };
 
@@ -381,6 +391,71 @@ Statement.ReturnStatement.consume = function(tokens) {
   remainingTokens = remainingTokens.slice(1);
 
   return [new Statement.ReturnStatement(expression[0]), remainingTokens];
+};
+
+Statement.IfStatement = function (predicate, statements) {
+  this.tag = 'ifStatement';
+  this.predicate = predicate;
+  this.statements = statements;
+};
+
+Statement.IfStatement.consume = function(tokens) {
+  if (tokens[0].content !== 'if') {
+    return [null, tokens];
+  }
+  remainingTokens = tokens.slice(1);
+
+  if (remainingTokens[0].content !== '(') {
+    return [null, tokens];
+  }
+  remainingTokens = remainingTokens.slice(1);
+
+  var expression = Expression.consume(remainingTokens);
+  if (expression[0] === null) {
+    return [null, tokens];
+  }
+  remainingTokens = expression[1];
+
+  if (remainingTokens[0].content !== ')') {
+    return [null, tokens];
+  }
+  remainingTokens = remainingTokens.slice(1);
+
+  if (remainingTokens[0].content !== '{') {
+    return [null, tokens];
+  }
+  remainingTokens = remainingTokens.slice(1);
+
+  var statements = [];
+  while (true) {
+    var statement = Statement.consume(remainingTokens);
+    if (statement[0] !== null) {
+      statements.push(statement[0]);
+    } else {
+      break;
+    }
+    remainingTokens = statement[1];
+  }
+  if (statements.length === 0) {
+    return [null, tokens];
+  }
+
+  if (remainingTokens[0].content !== '}') {
+    return [null, tokens];
+  }
+  remainingTokens = remainingTokens.slice(1);
+
+  return [new Statement.IfStatement(expression[0], statements[0]), remainingTokens];
+};
+
+Statement.WhileStatement = function (_expression, _statements) {
+  this.tag = 'whileStatement';
+  this.expression = _expression;
+  this.statements = _statements;
+};
+
+Statement.WhileStatement.consume = function(tokens) {
+  return [null, tokens];
 };
 
 function AnalyzerError(message) {
