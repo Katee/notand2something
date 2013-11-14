@@ -186,6 +186,13 @@ describe("Statements:", function() {
       expect(statement.tag).toBe('ifStatement');
     });
 
+    it("can contain multiple expressions", function() {
+      var tokens = getAllTokens("if (true) {let x = 5; let y = 10;}");
+      var statement = Statement.IfStatement.consume(tokens)[0];
+      expect(statement.tag).toBe('ifStatement');
+      expect(statement.statements.length).toBe(2);
+    });
+
   });
 
 });

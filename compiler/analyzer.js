@@ -445,7 +445,7 @@ Statement.IfStatement.consume = function(tokens) {
   }
   remainingTokens = remainingTokens.slice(1);
 
-  return [new Statement.IfStatement(expression[0], statements[0]), remainingTokens];
+  return [new Statement.IfStatement(expression[0], statements), remainingTokens];
 };
 
 Statement.WhileStatement = function (_expression, _statements) {
