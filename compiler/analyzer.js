@@ -319,6 +319,45 @@ Statement.DoStatement.consume = function(tokens) {
   return [new Statement.DoStatement(subroutineCall[0]), remainingTokens];
 };
 
+Statement.LetStatement = function (_varName, _expression) {
+  this.tag = 'letStatement';
+  this.varName = _varName;
+  this.expression = _expression;
+};
+
+Statement.LetStatement.consume = function(tokens) {
+  var remainingTokens = tokens;
+
+  if (remainingTokens[0].content !== 'let') {
+    return [null, tokens];
+  }
+  remainingTokens = tokens.slice(1);
+
+  var varName = VarName.consume(remainingTokens);
+  if (varName[0] === null) {
+    return [term, tokens];
+  }
+  remainingTokens = varName[1];
+
+  if (remainingTokens[0].content !== '=') {
+    return [null, tokens];
+  }
+  remainingTokens = remainingTokens.slice(1);
+
+  var expression = Expression.consume(remainingTokens);
+  if (expression[0] === null) {
+    return [null, tokens];
+  }
+  remainingTokens = expression[1];
+
+  if (remainingTokens[0].content !== ';') {
+    return [null, tokens];
+  }
+  remainingTokens = remainingTokens.slice(1);
+
+  return [new Statement.LetStatement(varName[0], expression[0]), remainingTokens];
+};
+
 function AnalyzerError(message) {
   this.name = "AnalyzerError";
   this.message = message;

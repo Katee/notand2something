@@ -156,6 +156,16 @@ describe("Statements:", function() {
 
   });
 
+  describe("Let statements", function() {
+
+    it("can assign a value to a varibale", function() {
+      var tokens = getAllTokens("let x = 10;");
+      var statement = Statement.LetStatement.consume(tokens)[0];
+      expect(statement.tag).toBe('letStatement');
+    });
+
+  });
+
 });
 
 // Helper method to that gets all tokens from a string
