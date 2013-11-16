@@ -195,6 +195,17 @@ describe("Statements:", function() {
 
   });
 
+  describe("While statements", function() {
+
+    it("have a predicate and statements", function() {
+      var tokens = getAllTokens("while (true) {return false;}");
+      var statement = Statement.WhileStatement.consume(tokens)[0];
+      expect(statement.tag).toBe('whileStatement');
+      expect(statement.statements.length).toBe(1);
+    });
+
+  });
+
 });
 
 // Helper method to that gets all tokens from a string

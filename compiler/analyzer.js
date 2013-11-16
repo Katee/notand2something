@@ -448,14 +448,59 @@ Statement.IfStatement.consume = function(tokens) {
   return [new Statement.IfStatement(expression[0], statements), remainingTokens];
 };
 
-Statement.WhileStatement = function (_expression, _statements) {
+Statement.WhileStatement = function (predicate, statements) {
   this.tag = 'whileStatement';
-  this.expression = _expression;
-  this.statements = _statements;
+  this.predicate = predicate;
+  this.statements = statements;
 };
 
 Statement.WhileStatement.consume = function(tokens) {
-  return [null, tokens];
+  if (tokens[0].content !== 'while') {
+    return [null, tokens];
+  }
+  remainingTokens = tokens.slice(1);
+
+  if (remainingTokens[0].content !== '(') {
+    return [null, tokens];
+  }
+  remainingTokens = remainingTokens.slice(1);
+
+  var expression = Expression.consume(remainingTokens);
+  if (expression[0] === null) {
+    return [null, tokens];
+  }
+  remainingTokens = expression[1];
+
+  if (remainingTokens[0].content !== ')') {
+    return [null, tokens];
+  }
+  remainingTokens = remainingTokens.slice(1);
+
+  if (remainingTokens[0].content !== '{') {
+    return [null, tokens];
+  }
+  remainingTokens = remainingTokens.slice(1);
+
+  var statements = [];
+  while (true) {
+    var statement = Statement.consume(remainingTokens);
+    if (statement[0] !== null) {
+      statements.push(statement[0]);
+    } else {
+      break;
+    }
+    remainingTokens = statement[1];
+  }
+  if (statements.length === 0) {
+    return [null, tokens];
+  }
+
+  if (remainingTokens[0].content !== '}') {
+    return [null, tokens];
+  }
+  remainingTokens = remainingTokens.slice(1);
+
+  return [new Statement.WhileStatement(expression[0], statements), remainingTokens];
 };
 
 function AnalyzerError(message) {
