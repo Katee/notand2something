@@ -193,6 +193,14 @@ describe("Statements:", function() {
       expect(statement.statements.length).toBe(2);
     });
 
+    it("can have else statements", function() {
+      var tokens = getAllTokens("if (true) {let x = 5;} else {let x = 10;}");
+      var statement = Statement.IfStatement.consume(tokens)[0];
+      expect(statement.tag).toBe('ifStatement');
+      expect(statement.statements.length).toBe(1);
+      expect(statement.elseStatements.length).toBe(1);
+    });
+
   });
 
   describe("While statements", function() {

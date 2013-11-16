@@ -393,10 +393,11 @@ Statement.ReturnStatement.consume = function(tokens) {
   return [new Statement.ReturnStatement(expression[0]), remainingTokens];
 };
 
-Statement.IfStatement = function (predicate, statements) {
+Statement.IfStatement = function (predicate, statements, elseStatements) {
   this.tag = 'ifStatement';
   this.predicate = predicate;
   this.statements = statements;
+  this.elseStatements = elseStatements;
 };
 
 Statement.IfStatement.consume = function(tokens) {
@@ -445,7 +446,38 @@ Statement.IfStatement.consume = function(tokens) {
   }
   remainingTokens = remainingTokens.slice(1);
 
-  return [new Statement.IfStatement(expression[0], statements), remainingTokens];
+  if (remainingTokens[0] === undefined || remainingTokens[0].content !== 'else') {
+    return [new Statement.IfStatement(expression[0], statements), remainingTokens];
+  } else {
+    remainingTokens = remainingTokens.slice(1);
+
+    if (remainingTokens[0].content !== '{') {
+      return [null, tokens];
+    }
+    remainingTokens = remainingTokens.slice(1);
+
+    var elseStatements = [];
+    while (true) {
+      statement = Statement.consume(remainingTokens);
+      if (statement[0] !== null) {
+        elseStatements.push(statement[0]);
+      } else {
+        break;
+      }
+      remainingTokens = statement[1];
+    }
+    if (statements.length === 0) {
+      return [null, tokens];
+    }
+
+    if (remainingTokens[0].content !== '}') {
+      return [null, tokens];
+    }
+    remainingTokens = remainingTokens.slice(1);
+
+    return [new Statement.IfStatement(expression[0], statements, elseStatements), remainingTokens];
+  }
+
 };
 
 Statement.WhileStatement = function (predicate, statements) {
