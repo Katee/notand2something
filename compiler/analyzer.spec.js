@@ -9,6 +9,7 @@ var ExpressionList = AnalyzerModule.ExpressionList;
 var SubroutineCall = AnalyzerModule.SubroutineCall;
 var Statement = AnalyzerModule.Statement;
 var ClassVarDec = AnalyzerModule.ClassVarDec;
+var VarDec = AnalyzerModule.VarDec;
 var Type = AnalyzerModule.Type;
 var Parameter = AnalyzerModule.Parameter;
 var ParameterList = AnalyzerModule.ParameterList;
@@ -248,6 +249,17 @@ describe("classVarDec", function() {
     var tokens = getAllTokens("field Square square;");
     var classVarDec = ClassVarDec.consume(tokens)[0];
     expect(classVarDec.decorator.content).toBe('field');
+  });
+
+});
+
+describe("VarDec", function() {
+
+  it("are a lot like classVarDecs except without a decorator", function() {
+    var tokens = getAllTokens("var Square square;");
+    var classVarDec = VarDec.consume(tokens)[0];
+    expect(classVarDec.type.content).toBe('Square');
+    expect(classVarDec.varName.content).toBe('square');
   });
 
 });

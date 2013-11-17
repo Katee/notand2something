@@ -6,6 +6,7 @@ module.exports.SubroutineCall = SubroutineCall;
 module.exports.ExpressionList = ExpressionList;
 module.exports.Statement = Statement;
 module.exports.ClassVarDec = ClassVarDec;
+module.exports.VarDec = VarDec;
 module.exports.Type = Type;
 module.exports.Parameter = Parameter;
 module.exports.ParameterList = ParameterList;
@@ -597,6 +598,43 @@ ClassVarDec.consume = function(tokens) {
   remainingTokens = remainingTokens.slice(1);
 
   return [new ClassVarDec(decorator, type, varName), remainingTokens];
+};
+
+function VarDec(type, varName) {
+  this.tag = 'classVarDec';
+  this.type = type;
+  this.varName = varName;
+}
+
+// TODO deal with case of more than one varName on a single line
+VarDec.consume = function(tokens) {
+  var classVarDecTypes = ['var'];
+
+  if (!_.contains(classVarDecTypes, tokens[0].content)) {
+    return [null, tokens];
+  }
+  remainingTokens = tokens.slice(1);
+
+  var type = Type.consume(remainingTokens);
+  if (type[0] === null) {
+    return [null, tokens];
+  }
+  remainingTokens = type[1];
+  type = type[0];
+
+  var varName = VarName.consume(remainingTokens);
+  if (varName[0] === null) {
+    return [null, tokens];
+  }
+  remainingTokens = varName[1];
+  varName = varName[0];
+
+  if (remainingTokens[0].content !== ';') {
+    return [null, tokens];
+  }
+  remainingTokens = remainingTokens.slice(1);
+
+  return [new VarDec(type, varName), remainingTokens];
 };
 
 function Parameter(type, varName) {
