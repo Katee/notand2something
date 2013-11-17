@@ -130,6 +130,10 @@ function Type(){}
 Type.consume = function(tokens){
   var token = tokens[0];
 
+  if (token === undefined) {
+    return [null, tokens];
+  }
+
   if (_.contains(TYPES, token.content)) {
     return [token, tokens.slice(1)];
   }
