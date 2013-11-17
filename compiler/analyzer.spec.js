@@ -8,6 +8,7 @@ var Expression = AnalyzerModule.Expression;
 var ExpressionList = AnalyzerModule.ExpressionList;
 var SubroutineCall = AnalyzerModule.SubroutineCall;
 var Statement = AnalyzerModule.Statement;
+var ClassVarDec = AnalyzerModule.ClassVarDec;
 var Type = AnalyzerModule.Type;
 var Parameter = AnalyzerModule.Parameter;
 var ParameterList = AnalyzerModule.ParameterList;
@@ -235,6 +236,21 @@ describe("Type", function() {
 
 });
 
+describe("classVarDec", function() {
+
+  it("can be static", function() {
+    var tokens = getAllTokens("static Square square;");
+    var classVarDec = ClassVarDec.consume(tokens)[0];
+    expect(classVarDec.decorator.content).toBe('static');
+  });
+
+  it("can be field", function() {
+    var tokens = getAllTokens("field Square square;");
+    var classVarDec = ClassVarDec.consume(tokens)[0];
+    expect(classVarDec.decorator.content).toBe('field');
+  });
+
+});
 
 describe("Parameters", function() {
 

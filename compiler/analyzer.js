@@ -560,6 +560,44 @@ Statement.WhileStatement.consume = function(tokens) {
   return [new Statement.WhileStatement(expression[0], statements), remainingTokens];
 };
 
+function ClassVarDec(decorator, type, varName) {
+  this.tag = 'classVarDec';
+  this.decorator = decorator;
+  this.type = type;
+  this.varName = varName;
+}
+
+// TODO deal with case of more than one varName on a single line
+ClassVarDec.consume = function(tokens) {
+  var classVarDecTypes = ['static', 'field'];
+
+  if (!_.contains(classVarDecTypes, tokens[0].content)) {
+    return [null, tokens];
+  }
+  remainingTokens = tokens.slice(1);
+  var decorator = tokens[0];
+
+  var type = Type.consume(remainingTokens);
+  if (type[0] === null) {
+    return [null, tokens];
+  }
+  remainingTokens = type[1];
+  type = type[0];
+
+  var varName = VarName.consume(remainingTokens);
+  if (varName[0] === null) {
+    return [null, tokens];
+  }
+  remainingTokens = varName[1];
+  varName = varName[0];
+
+  if (remainingTokens[0].content !== ';') {
+    return [null, tokens];
+  }
+  remainingTokens = remainingTokens.slice(1);
+
+  return [new ClassVarDec(decorator, type, varName), remainingTokens];
+};
 
 function Parameter(type, varName) {
   this.tag = "parameter";
