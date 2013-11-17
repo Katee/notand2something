@@ -5,10 +5,13 @@ module.exports.Expression = Expression;
 module.exports.SubroutineCall = SubroutineCall;
 module.exports.ExpressionList = ExpressionList;
 module.exports.Statement = Statement;
+module.exports.ClassVarDec = ClassVarDec;
+module.exports.Type = Type;
 
 var debug = module.exports.debug = true;
 
 var KEYWORDS_CONSTANTS = ['this', 'true', 'false', 'null'];
+var TYPES = ['int', 'char', 'boolean'];
 var OPERATORS = ['+', '-', '*', '/', '&', '|', '<', '>', '='];
 var UNARY_OPERATORS = ['-', '~'];
 var MIN_INTEGER = 0;
@@ -120,6 +123,22 @@ VarName.consume = function(tokens){
       || token.tag === 'identifier' && token.content[0].match(/[a-z]/))) {
     return [token, tokens.slice(1)];
   }
+  return [null, tokens];
+};
+
+function Type(){}
+Type.consume = function(tokens){
+  var token = tokens[0];
+
+  if (_.contains(TYPES, token.content)) {
+    return [token, tokens.slice(1)];
+  }
+
+  var className = ClassName.consume(tokens);
+  if (className[0] !== null) {
+    return [className[0], className[1]];
+  }
+
   return [null, tokens];
 };
 

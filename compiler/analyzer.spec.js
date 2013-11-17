@@ -8,6 +8,7 @@ var Expression = AnalyzerModule.Expression;
 var ExpressionList = AnalyzerModule.ExpressionList;
 var SubroutineCall = AnalyzerModule.SubroutineCall;
 var Statement = AnalyzerModule.Statement;
+var Type = AnalyzerModule.Type;
 
 describe('Integer Constants', function() {
 
@@ -212,6 +213,22 @@ describe("Statements:", function() {
       expect(statement.statements.length).toBe(1);
     });
 
+  });
+
+});
+
+describe("Type", function() {
+
+  it("can use builtin types", function() {
+    var tokens = getAllTokens("int");
+    var type = Type.consume(tokens)[0];
+    expect(type.content).toBe('int');
+  });
+
+  it("can be a className", function() {
+    var tokens = getAllTokens("ClassName");
+    var type = Type.consume(tokens)[0];
+    expect(type.content).toBe('ClassName');
   });
 
 });
