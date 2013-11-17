@@ -9,6 +9,8 @@ var ExpressionList = AnalyzerModule.ExpressionList;
 var SubroutineCall = AnalyzerModule.SubroutineCall;
 var Statement = AnalyzerModule.Statement;
 var Type = AnalyzerModule.Type;
+var Parameter = AnalyzerModule.Parameter;
+var ParameterList = AnalyzerModule.ParameterList;
 
 describe('Integer Constants', function() {
 
@@ -229,6 +231,24 @@ describe("Type", function() {
     var tokens = getAllTokens("ClassName");
     var type = Type.consume(tokens)[0];
     expect(type.content).toBe('ClassName');
+  });
+
+});
+
+
+describe("Parameters", function() {
+
+  it("are just types followed by a varName", function() {
+    var tokens = getAllTokens("int x");
+    var parameter = Parameter.consume(tokens)[0];
+    expect(parameter.type.content).toBe('int');
+    expect(parameter.varName.content).toBe('x');
+  });
+
+  it("can be strung together in a parameter list", function() {
+    var tokens = getAllTokens("int x, char a, boolean b");
+    var parameterList = ParameterList.consume(tokens)[0];
+    expect(parameterList.parameters.length).toBe(3);
   });
 
 });

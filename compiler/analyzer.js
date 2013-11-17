@@ -7,6 +7,8 @@ module.exports.ExpressionList = ExpressionList;
 module.exports.Statement = Statement;
 module.exports.ClassVarDec = ClassVarDec;
 module.exports.Type = Type;
+module.exports.Parameter = Parameter;
+module.exports.ParameterList = ParameterList;
 
 var debug = module.exports.debug = true;
 
@@ -556,6 +558,61 @@ Statement.WhileStatement.consume = function(tokens) {
   remainingTokens = remainingTokens.slice(1);
 
   return [new Statement.WhileStatement(expression[0], statements), remainingTokens];
+};
+
+
+function Parameter(type, varName) {
+  this.tag = "parameter";
+  this.type = type;
+  this.varName = varName;
+}
+
+Parameter.consume = function(tokens) {
+  var parameter = new Parameter();
+
+  var type = Type.consume(tokens);
+  if (type[0] === null) {
+    return [null, tokens];
+  }
+  var remainingTokens = type[1];
+
+  var varName = VarName.consume(remainingTokens);
+  if (varName[0] === null) {
+    return [null, tokens];
+  }
+  remainingTokens = varName[1];
+
+  return [new Parameter(type[0], varName[0]), remainingTokens];
+};
+
+function ParameterList() {
+  this.tag = "parameterList";
+  this.parameters = [];
+}
+
+ParameterList.consume = function(tokens) {
+  var parameterList = new ParameterList();
+
+  var parameter = Parameter.consume(tokens);
+  if (parameter[0] !== null) {
+    parameterList.parameters.push(parameter[0]);
+    var remainingTokens = parameter[1];
+  } else {
+    return [null, tokens];
+  }
+
+  while (true) {
+    var comma = remainingTokens[0] != undefined && remainingTokens[0].content === ',';
+    parameter = Parameter.consume(remainingTokens.slice(1));
+    if (comma && parameter[0] !== null) {
+      parameterList.parameters.push(parameter[0]);
+      remainingTokens = parameter[1];
+    } else {
+      break;
+    }
+  }
+
+  return [parameterList, remainingTokens];
 };
 
 function AnalyzerError(message) {
