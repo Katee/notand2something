@@ -190,6 +190,12 @@ describe("Statements:", function() {
       });
     });
 
+    it("can return nothing", function() {
+      var tokens = getAllTokens("return;");
+      var statement = Statement.ReturnStatement.consume(tokens)[0];
+      expect(statement.tag).toBe('returnStatement');
+    });
+
   });
 
   describe("If statements", function() {

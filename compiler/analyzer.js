@@ -422,12 +422,13 @@ Statement.LetStatement.consume = function(tokens) {
   return [new Statement.LetStatement(varName[0], expression[0]), remainingTokens];
 };
 
-Statement.ReturnStatement = function (_expression) {
+Statement.ReturnStatement = function () {
   this.tag = 'returnStatement';
-  this.expression = _expression;
+  this.expression;
 };
 
 Statement.ReturnStatement.consume = function(tokens) {
+  var returnStatement = new Statement.ReturnStatement();
   var remainingTokens = tokens;
 
   var literal = Literal.consume('return', remainingTokens);
@@ -437,10 +438,10 @@ Statement.ReturnStatement.consume = function(tokens) {
   remainingTokens = literal[1];
 
   var expression = Expression.consume(remainingTokens);
-  if (expression[0] === null) {
-    return [null, tokens];
+  if (expression[0] !== null) {
+    returnStatement.expression = expression[0];
+    remainingTokens = expression[1];
   }
-  remainingTokens = expression[1];
 
   literal = Literal.consume(';', remainingTokens);
   if (literal[0] === null) {
@@ -448,7 +449,7 @@ Statement.ReturnStatement.consume = function(tokens) {
   }
   remainingTokens = literal[1];
 
-  return [new Statement.ReturnStatement(expression[0]), remainingTokens];
+  return [returnStatement, remainingTokens];
 };
 
 Statement.IfStatement = function (predicate, statements, elseStatements) {
