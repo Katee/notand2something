@@ -66,17 +66,25 @@ Term.consume = function(tokens) {
     return [term, keywordConstant[1]];
   }
 
-  // TODO varName '[' expression ']'
-
   var varName = VarName.consume(tokens);
   if (varName[0] !== null) {
     term.content = varName[0];
-    return [term, varName[1]];
+    var openBracket = Literal.consume("[", varName[1]);
+    if (openBracket[0] === null) {
+      return [term, varName[1]];
+    } else {
+      var expression = Expression.consume(openBracket[1]);
+      var closeBracket = Literal.consume("]", expression[1]);
+      if (expression[0] !== null && closeBracket[0] !== null) {
+        term.expression = expression[0];
+        return [term, closeBracket[1]];
+      }
+    }
   }
 
   var literal = Literal.consume('(', tokens);
   if (literal[0] !== null) {
-    var expression = Expression.consume(tokens.slice(1));
+    expression = Expression.consume(literal[1]);
     if (expression[0] !== null) {
       if (expression[1][0] !== undefined && expression[1][0].content === ')') {
         term.content = expression[0];

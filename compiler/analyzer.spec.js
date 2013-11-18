@@ -76,6 +76,12 @@ describe('Terms', function() {
     expect(term.content.terms.length).toBe(3);
   });
 
+  it('can be an array lookup', function() {
+    var tokens = getAllTokens('test[10 + 2]');
+    var term = Term.consume(tokens)[0];
+    expect(term.expression.terms.length).toBe(3);
+  });
+
 });
 
 describe("Expressions", function() {
