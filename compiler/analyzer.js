@@ -23,6 +23,15 @@ var UNARY_OPERATORS = ['-', '~'];
 var MIN_INTEGER = 0;
 var MAX_INTEGER = 32767;
 
+var Literal = {
+  consume: function(literal, tokens) {
+    if (tokens[0] !== undefined && tokens[0].content === literal) {
+      return [tokens[0], tokens.slice(1)];
+    }
+    return [null, tokens];
+  }
+};
+
 function Term() {
   this.tag = 'term';
   this.content;
@@ -64,7 +73,8 @@ Term.consume = function(tokens) {
     return [term, varName[1]];
   }
 
-  if (tokens[0] !== undefined && tokens[0].content === '(') {
+  var literal = Literal.consume('(', tokens);
+  if (literal[0] !== null) {
     var expression = Expression.consume(tokens.slice(1));
     if (expression[0] !== null) {
       if (expression[1][0] !== undefined && expression[1][0].content === ')') {
@@ -292,27 +302,28 @@ function ExpressionList() {
 
 ExpressionList.consume = function(tokens) {
   var expressionList = new ExpressionList();
+  var remainingTokens = tokens;
 
-  var expression = Expression.consume(tokens);
+  var expression = Expression.consume(remainingTokens);
   if (expression[0] !== null) {
     expressionList.expressions.push(expression[0]);
-    tokens = expression[1];
+    remainingTokens = expression[1];
   } else {
     return [null, tokens];
   }
 
   while (true) {
-    var comma = tokens[0] != undefined && tokens[0].content === ',';
-    expression = Expression.consume(tokens.slice(1));
-    if (comma && expression[0] !== null) {
+    var comma = Literal.consume(',', remainingTokens);
+    expression = Expression.consume(comma[1]);
+    if (comma[0] !== null && expression[0] !== null) {
       expressionList.expressions.push(expression[0]);
-      tokens = expression[1];
+      remainingTokens = expression[1];
     } else {
       break;
     }
   }
 
-  return [expressionList, tokens];
+  return [expressionList, remainingTokens];
 };
 
 function Statement() {}
@@ -337,12 +348,13 @@ Statement.DoStatement = function(_subroutineCall) {
 };
 
 Statement.DoStatement.consume = function(tokens) {
-  var token = tokens[0];
-  var remainingTokens = tokens.slice(1);
+  var remainingTokens = tokens;
 
-  if (token.content !== 'do') {
+  var literal = Literal.consume('do', remainingTokens);
+  if (literal[0] === null) {
     return [null, tokens];
   }
+  remainingTokens = literal[1];
 
   var subroutineCall = SubroutineCall.consume(remainingTokens);
   if (subroutineCall[0] === null) {
@@ -350,10 +362,11 @@ Statement.DoStatement.consume = function(tokens) {
   }
   remainingTokens = subroutineCall[1];
 
-  if (remainingTokens[0].content !== ';') {
+  literal = Literal.consume(';', remainingTokens);
+  if (literal[0] === null) {
     return [null, tokens];
   }
-  remainingTokens = remainingTokens.slice(1);
+  remainingTokens = literal[1];
 
   return [new Statement.DoStatement(subroutineCall[0]), remainingTokens];
 };
@@ -367,10 +380,11 @@ Statement.LetStatement = function (_varName, _expression) {
 Statement.LetStatement.consume = function(tokens) {
   var remainingTokens = tokens;
 
-  if (remainingTokens[0].content !== 'let') {
+  var literal = Literal.consume('let', remainingTokens);
+  if (literal[0] === null) {
     return [null, tokens];
   }
-  remainingTokens = tokens.slice(1);
+  remainingTokens = literal[1];
 
   var varName = VarName.consume(remainingTokens);
   if (varName[0] === null) {
@@ -378,10 +392,11 @@ Statement.LetStatement.consume = function(tokens) {
   }
   remainingTokens = varName[1];
 
-  if (remainingTokens[0].content !== '=') {
+  literal = Literal.consume('=', remainingTokens);
+  if (literal[0] === null) {
     return [null, tokens];
   }
-  remainingTokens = remainingTokens.slice(1);
+  remainingTokens = literal[1];
 
   var expression = Expression.consume(remainingTokens);
   if (expression[0] === null) {
@@ -389,10 +404,11 @@ Statement.LetStatement.consume = function(tokens) {
   }
   remainingTokens = expression[1];
 
-  if (remainingTokens[0].content !== ';') {
+  literal = Literal.consume(';', remainingTokens);
+  if (literal[0] === null) {
     return [null, tokens];
   }
-  remainingTokens = remainingTokens.slice(1);
+  remainingTokens = literal[1];
 
   return [new Statement.LetStatement(varName[0], expression[0]), remainingTokens];
 };
@@ -403,10 +419,13 @@ Statement.ReturnStatement = function (_expression) {
 };
 
 Statement.ReturnStatement.consume = function(tokens) {
-  if (tokens[0].content !== 'return') {
+  var remainingTokens = tokens;
+
+  var literal = Literal.consume('return', remainingTokens);
+  if (literal[0] === null) {
     return [null, tokens];
   }
-  remainingTokens = tokens.slice(1);
+  remainingTokens = literal[1];
 
   var expression = Expression.consume(remainingTokens);
   if (expression[0] === null) {
@@ -414,10 +433,11 @@ Statement.ReturnStatement.consume = function(tokens) {
   }
   remainingTokens = expression[1];
 
-  if (remainingTokens[0].content !== ';') {
+  literal = Literal.consume(';', remainingTokens);
+  if (literal[0] === null) {
     return [null, tokens];
   }
-  remainingTokens = remainingTokens.slice(1);
+  remainingTokens = literal[1];
 
   return [new Statement.ReturnStatement(expression[0]), remainingTokens];
 };
@@ -430,15 +450,19 @@ Statement.IfStatement = function (predicate, statements, elseStatements) {
 };
 
 Statement.IfStatement.consume = function(tokens) {
-  if (tokens[0].content !== 'if') {
-    return [null, tokens];
-  }
-  remainingTokens = tokens.slice(1);
+  var remainingTokens = tokens;
 
-  if (remainingTokens[0].content !== '(') {
+  var literal = Literal.consume('if', remainingTokens);
+  if (literal[0] === null) {
     return [null, tokens];
   }
-  remainingTokens = remainingTokens.slice(1);
+  remainingTokens = literal[1];
+
+  literal = Literal.consume('(', remainingTokens);
+  if (literal[0] === null) {
+    return [null, tokens];
+  }
+  remainingTokens = literal[1];
 
   var expression = Expression.consume(remainingTokens);
   if (expression[0] === null) {
@@ -446,15 +470,17 @@ Statement.IfStatement.consume = function(tokens) {
   }
   remainingTokens = expression[1];
 
-  if (remainingTokens[0].content !== ')') {
+  literal = Literal.consume(')', remainingTokens);
+  if (literal[0] === null) {
     return [null, tokens];
   }
-  remainingTokens = remainingTokens.slice(1);
+  remainingTokens = literal[1];
 
-  if (remainingTokens[0].content !== '{') {
+  literal = Literal.consume('{', remainingTokens);
+  if (literal[0] === null) {
     return [null, tokens];
   }
-  remainingTokens = remainingTokens.slice(1);
+  remainingTokens = literal[1];
 
   var statements = [];
   while (true) {
@@ -470,15 +496,17 @@ Statement.IfStatement.consume = function(tokens) {
     return [null, tokens];
   }
 
-  if (remainingTokens[0].content !== '}') {
+  literal = Literal.consume('}', remainingTokens);
+  if (literal[0] === null) {
     return [null, tokens];
   }
-  remainingTokens = remainingTokens.slice(1);
+  remainingTokens = literal[1];
 
-  if (remainingTokens[0] === undefined || remainingTokens[0].content !== 'else') {
+  literal = Literal.consume('else', remainingTokens);
+  if (literal[0] === null) {
     return [new Statement.IfStatement(expression[0], statements), remainingTokens];
   } else {
-    remainingTokens = remainingTokens.slice(1);
+    remainingTokens = literal[1];
 
     if (remainingTokens[0].content !== '{') {
       return [null, tokens];
@@ -499,10 +527,11 @@ Statement.IfStatement.consume = function(tokens) {
       return [null, tokens];
     }
 
-    if (remainingTokens[0].content !== '}') {
+    literal = Literal.consume('}', remainingTokens);
+    if (literal[0] === null) {
       return [null, tokens];
     }
-    remainingTokens = remainingTokens.slice(1);
+    remainingTokens = literal[1];
 
     return [new Statement.IfStatement(expression[0], statements, elseStatements), remainingTokens];
   }
@@ -516,15 +545,19 @@ Statement.WhileStatement = function (predicate, statements) {
 };
 
 Statement.WhileStatement.consume = function(tokens) {
-  if (tokens[0].content !== 'while') {
-    return [null, tokens];
-  }
-  remainingTokens = tokens.slice(1);
+  var remainingTokens  = tokens;
 
-  if (remainingTokens[0].content !== '(') {
+  var literal = Literal.consume('while', remainingTokens);
+  if (literal[0] === null) {
     return [null, tokens];
   }
-  remainingTokens = remainingTokens.slice(1);
+  remainingTokens = literal[1];
+
+  literal = Literal.consume('(', remainingTokens);
+  if (literal[0] === null) {
+    return [null, tokens];
+  }
+  remainingTokens = literal[1];
 
   var expression = Expression.consume(remainingTokens);
   if (expression[0] === null) {
@@ -532,15 +565,17 @@ Statement.WhileStatement.consume = function(tokens) {
   }
   remainingTokens = expression[1];
 
-  if (remainingTokens[0].content !== ')') {
+  literal = Literal.consume(')', remainingTokens);
+  if (literal[0] === null) {
     return [null, tokens];
   }
-  remainingTokens = remainingTokens.slice(1);
+  remainingTokens = literal[1];
 
-  if (remainingTokens[0].content !== '{') {
+  literal = Literal.consume('{', remainingTokens);
+  if (literal[0] === null) {
     return [null, tokens];
   }
-  remainingTokens = remainingTokens.slice(1);
+  remainingTokens = literal[1];
 
   var statements = [];
   while (true) {
@@ -556,10 +591,11 @@ Statement.WhileStatement.consume = function(tokens) {
     return [null, tokens];
   }
 
-  if (remainingTokens[0].content !== '}') {
+  literal = Literal.consume('}', remainingTokens);
+  if (literal[0] === null) {
     return [null, tokens];
   }
-  remainingTokens = remainingTokens.slice(1);
+  remainingTokens = literal[1];
 
   return [new Statement.WhileStatement(expression[0], statements), remainingTokens];
 };
@@ -575,7 +611,7 @@ function ClassVarDec(decorator, type, varName) {
 ClassVarDec.consume = function(tokens) {
   var classVarDecTypes = ['static', 'field'];
 
-  if (!_.contains(classVarDecTypes, tokens[0].content)) {
+  if (tokens[0] === undefined || !_.contains(classVarDecTypes, tokens[0].content)) {
     return [null, tokens];
   }
   remainingTokens = tokens.slice(1);
@@ -595,10 +631,11 @@ ClassVarDec.consume = function(tokens) {
   remainingTokens = varName[1];
   varName = varName[0];
 
-  if (remainingTokens[0].content !== ';') {
+  var literal = Literal.consume(';', remainingTokens);
+  if (literal[0] === null) {
     return [null, tokens];
   }
-  remainingTokens = remainingTokens.slice(1);
+  remainingTokens = literal[1];
 
   return [new ClassVarDec(decorator, type, varName), remainingTokens];
 };
@@ -632,10 +669,11 @@ VarDec.consume = function(tokens) {
   remainingTokens = varName[1];
   varName = varName[0];
 
-  if (remainingTokens[0].content !== ';') {
+  var literal = Literal.consume(';', remainingTokens);
+  if (literal[0] === null) {
     return [null, tokens];
   }
-  remainingTokens = remainingTokens.slice(1);
+  remainingTokens = literal[1];
 
   return [new VarDec(type, varName), remainingTokens];
 };
@@ -648,11 +686,13 @@ function SubroutineBody() {
 
 SubroutineBody.consume = function(tokens) {
   var subroutineBody = new SubroutineBody();
+  var remainingTokens = tokens;
 
-  if (tokens[0].content !== '{') {
+  var literal = Literal.consume('{', remainingTokens);
+  if (literal[0] === null) {
     return [null, tokens];
   }
-  remainingTokens = tokens.slice(1);
+  remainingTokens = literal[1];
 
   while (true) {
     var varDec = VarDec.consume(remainingTokens);
@@ -674,10 +714,11 @@ SubroutineBody.consume = function(tokens) {
     }
   }
 
-  if (remainingTokens[0].content !== '}') {
+  literal = Literal.consume('}', remainingTokens);
+  if (literal[0] === null) {
     return [null, tokens];
   }
-  remainingTokens = remainingTokens.slice(1);
+  remainingTokens = literal[1];
 
   return [subroutineBody, remainingTokens];
 };
@@ -690,12 +731,13 @@ function Parameter(type, varName) {
 
 Parameter.consume = function(tokens) {
   var parameter = new Parameter();
+  var remainingTokens = tokens;
 
-  var type = Type.consume(tokens);
+  var type = Type.consume(remainingTokens);
   if (type[0] === null) {
     return [null, tokens];
   }
-  var remainingTokens = type[1];
+  remainingTokens = type[1];
 
   var varName = VarName.consume(remainingTokens);
   if (varName[0] === null) {
@@ -713,19 +755,20 @@ function ParameterList() {
 
 ParameterList.consume = function(tokens) {
   var parameterList = new ParameterList();
+  var remainingTokens = tokens;
 
-  var parameter = Parameter.consume(tokens);
+  var parameter = Parameter.consume(remainingTokens);
   if (parameter[0] !== null) {
     parameterList.parameters.push(parameter[0]);
-    var remainingTokens = parameter[1];
+    remainingTokens = parameter[1];
   } else {
     return [null, tokens];
   }
 
   while (true) {
-    var comma = remainingTokens[0] != undefined && remainingTokens[0].content === ',';
-    parameter = Parameter.consume(remainingTokens.slice(1));
-    if (comma && parameter[0] !== null) {
+    var comma = Literal.consume(',', remainingTokens);
+    parameter = Parameter.consume(comma[1]);
+    if (comma[0] !== null && parameter[0] !== null) {
       parameterList.parameters.push(parameter[0]);
       remainingTokens = parameter[1];
     } else {
@@ -749,7 +792,7 @@ SubroutineDec.consume = function(tokens) {
   var subroutineDec = new SubroutineDec();
   var token = tokens[0];
 
-  if (!_.contains(SUBROUTINE_TYPES, token.content)) {
+  if (token === undefined || !_.contains(SUBROUTINE_TYPES, token.content)) {
     return [null, tokens];
   }
   var remainingTokens = tokens.slice(1);
@@ -774,10 +817,11 @@ SubroutineDec.consume = function(tokens) {
   remainingTokens = subroutineName[1];
   subroutineDec.subroutineName = subroutineName[0];
 
-  if (remainingTokens[0].content !== '(') {
+  var literal = Literal.consume('(', remainingTokens);
+  if (literal[0] === null) {
     return [null, tokens];
   }
-  remainingTokens = remainingTokens.slice(1);
+  remainingTokens = literal[1];
 
   var parameterList = ParameterList.consume(remainingTokens);
   if (parameterList[0] === null) {
@@ -786,10 +830,11 @@ SubroutineDec.consume = function(tokens) {
   remainingTokens = parameterList[1];
   subroutineDec.parameters = parameterList[0].parameters;
 
-  if (remainingTokens[0].content !== ')') {
+  literal = Literal.consume(')', remainingTokens);
+  if (literal[0] === null) {
     return [null, tokens];
   }
-  remainingTokens = remainingTokens.slice(1);
+  remainingTokens = literal[1];
 
   var subroutineBody = SubroutineBody.consume(remainingTokens);
   if (subroutineBody[0] === null) {
