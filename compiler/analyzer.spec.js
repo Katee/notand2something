@@ -13,6 +13,7 @@ var VarDec = AnalyzerModule.VarDec;
 var Type = AnalyzerModule.Type;
 var Parameter = AnalyzerModule.Parameter;
 var ParameterList = AnalyzerModule.ParameterList;
+var SubroutineBody = AnalyzerModule.SubroutineBody;
 
 describe('Integer Constants', function() {
 
@@ -277,6 +278,17 @@ describe("Parameters", function() {
     var tokens = getAllTokens("int x, char a, boolean b");
     var parameterList = ParameterList.consume(tokens)[0];
     expect(parameterList.parameters.length).toBe(3);
+  });
+
+});
+
+describe("SubroutineBody", function() {
+
+  it("can contain var decs and statements", function() {
+    var tokens = getAllTokens("{var Square x; let x = 100;}");
+    var subroutineBody = SubroutineBody.consume(tokens)[0];
+    expect(subroutineBody.varDecs.length).toBe(1);
+    expect(subroutineBody.statements.length).toBe(1);
   });
 
 });

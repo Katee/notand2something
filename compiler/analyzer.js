@@ -10,6 +10,7 @@ module.exports.VarDec = VarDec;
 module.exports.Type = Type;
 module.exports.Parameter = Parameter;
 module.exports.ParameterList = ParameterList;
+module.exports.SubroutineBody = SubroutineBody;
 
 var debug = module.exports.debug = true;
 
@@ -635,6 +636,48 @@ VarDec.consume = function(tokens) {
   remainingTokens = remainingTokens.slice(1);
 
   return [new VarDec(type, varName), remainingTokens];
+};
+
+function SubroutineBody() {
+  this.tag = "subroutineBody";
+  this.varDecs = [];
+  this.statements = [];
+}
+
+SubroutineBody.consume = function(tokens) {
+  var subroutineBody = new SubroutineBody();
+
+  if (tokens[0].content !== '{') {
+    return [null, tokens];
+  }
+  remainingTokens = tokens.slice(1);
+
+  while (true) {
+    var varDec = VarDec.consume(remainingTokens);
+    if (varDec[0] !== null) {
+      subroutineBody.varDecs.push(varDec[0]);
+      remainingTokens = varDec[1];
+    } else {
+      break;
+    }
+  }
+
+  while (true) {
+    var statement = Statement.consume(remainingTokens);
+    if (statement[0] !== null) {
+      subroutineBody.statements.push(statement[0]);
+      remainingTokens = statement[1];
+    } else {
+      break;
+    }
+  }
+
+  if (remainingTokens[0].content !== '}') {
+    return [null, tokens];
+  }
+  remainingTokens = remainingTokens.slice(1);
+
+  return [subroutineBody, remainingTokens];
 };
 
 function Parameter(type, varName) {
