@@ -15,6 +15,7 @@ var Parameter = AnalyzerModule.Parameter;
 var ParameterList = AnalyzerModule.ParameterList;
 var SubroutineBody = AnalyzerModule.SubroutineBody;
 var SubroutineDec = AnalyzerModule.SubroutineDec;
+var Class = AnalyzerModule.Class;
 
 describe('Integer Constants', function() {
 
@@ -301,6 +302,17 @@ describe("SubroutineDec", function(){
     var subroutineDec = SubroutineDec.consume(tokens)[0];
     expect(subroutineDec.body.statements.length).toBe(2);
     expect(subroutineDec.parameters.length).toBe(2);
+  });
+
+});
+
+describe("Class Declaration", function(){
+
+  it("put class name, class varibale declarations and subroutine declarations", function(){
+    var tokens = getAllTokens("class Test {field int a; method void init(int a) {return a;}}");
+    var klass = Class.consume(tokens)[0];
+    expect(klass.classVarDecs.length).toBe(1);
+    expect(klass.subroutineDecs.length).toBe(1);
   });
 
 });

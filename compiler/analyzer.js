@@ -12,6 +12,7 @@ module.exports.Parameter = Parameter;
 module.exports.ParameterList = ParameterList;
 module.exports.SubroutineBody = SubroutineBody;
 module.exports.SubroutineDec = SubroutineDec;
+module.exports.Class = Class;
 
 var debug = module.exports.debug = true;
 
@@ -844,6 +845,59 @@ SubroutineDec.consume = function(tokens) {
   remainingTokens = subroutineBody[1];
 
   return [subroutineDec, remainingTokens];
+};
+
+function Class() {
+  this.tag = "class";
+  this.name = null;
+  this.classVarDecs = [];
+  this.subroutineDecs = [];
+}
+
+Class.consume = function(tokens) {
+  var klass = new Class();
+  var remainingTokens = tokens;
+
+  var literal = Literal.consume('class', remainingTokens);
+  if (literal[0] === null) {
+    return [null, tokens];
+  }
+  remainingTokens = literal[1];
+
+  var className = ClassName.consume(remainingTokens);
+  if (className[0] === null) {
+    return [null, tokens];
+  }
+  remainingTokens = className[1];
+  klass.name = className[0];
+
+  literal = Literal.consume('{', remainingTokens);
+  if (literal[0] === null) {
+    return [null, tokens];
+  }
+  remainingTokens = literal[1];
+
+  while (true) {
+    var classVarDec = ClassVarDec.consume(remainingTokens);
+    if (classVarDec[0] !== null) {
+      klass.classVarDecs.push(classVarDec[0]);
+      remainingTokens = classVarDec[1];
+    } else {
+      break;
+    }
+  }
+
+  while (true) {
+    var subroutineDec = SubroutineDec.consume(remainingTokens);
+    if (subroutineDec[0] !== null) {
+      klass.subroutineDecs.push(subroutineDec[0]);
+      remainingTokens = subroutineDec[1];
+    } else {
+      break;
+    }
+  }
+
+  return [klass, remainingTokens];
 };
 
 function AnalyzerError(message) {
