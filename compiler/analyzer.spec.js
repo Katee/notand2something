@@ -137,10 +137,10 @@ describe('SubroutineCall', function() {
     expect(subroutineCall).not.toBe(null);
   });
 
-  it('cant be called on classes', function() {
+  it('can be called on classes', function() {
     var tokens = getAllTokens('ClassName.foo()');
     var subroutineCall = SubroutineCall.consume(tokens)[0];
-    expect(subroutineCall).not.toBe(null);
+    expect(subroutineCall.tag).toBe("subroutineCall");
   });
 
   it('can be called on variables', function() {
