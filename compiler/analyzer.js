@@ -911,6 +911,12 @@ Class.consume = function(tokens) {
     }
   }
 
+  literal = Literal.consume('}', remainingTokens);
+  if (literal[0] === null) {
+    return [null, tokens];
+  }
+  remainingTokens = literal[1];
+
   return [klass, remainingTokens];
 };
 
