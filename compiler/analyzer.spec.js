@@ -92,6 +92,12 @@ describe("Expressions", function() {
     expect(expression.terms.length).toBe(3);
   });
 
+  it("an expression can start with a unary op", function() {
+    var tokens = getAllTokens('-true)');
+    var expression = Expression.consume(tokens)[0];
+    expect(expression.terms.length).toBe(2);
+  });
+
 });
 
 describe("Expression lists", function() {

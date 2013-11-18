@@ -211,30 +211,38 @@ function Expression() {
 
 Expression.consume = function(tokens) {
   var expression = new Expression();
+  var remainingTokens = tokens;
 
-  term = Term.consume(tokens);
+  // optional first unaryOp
+  var op = UnaryOp.consume(remainingTokens);
+  if (op[0] !== null) {
+    expression.terms.push(op[0]);
+    remainingTokens = op[1];
+  }
+
+  term = Term.consume(remainingTokens);
   if (term[0] !== null) {
     expression.terms.push(term[0]);
-    tokens = term[1];
+    remainingTokens = term[1];
   } else {
     return [null, tokens];
   }
 
   // keep adding (op term) pairs
   while (true) {
-    var op = Op.consume(tokens);
-    var term = Term.consume(tokens.slice(1));
+    var op = Op.consume(remainingTokens);
+    var term = Term.consume(remainingTokens.slice(1));
     if (op[0] !== null && term[0] !== null) {
       expression.terms.push(op[0]);
       expression.terms.push(term[0]);
-      tokens = term[1];
+      remainingTokens= term[1];
     } else {
       break;
     }
   }
 
   if (expression.terms.length > 0) {
-    return [expression, tokens];
+    return [expression, remainingTokens];
   }
 };
 
