@@ -26,7 +26,7 @@ var MAX_INTEGER = 32767;
 
 var Literal = {
   consume: function(literal, tokens) {
-    if (tokens[0] !== undefined && tokens[0].content === literal) {
+    if (tokens !== undefined && tokens[0] !== undefined && tokens[0].content === literal) {
       return [tokens[0], tokens.slice(1)];
     }
     return [null, tokens];
