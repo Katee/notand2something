@@ -143,7 +143,7 @@ describe('SubroutineCall', function() {
     expect(subroutineCall).not.toBe(null);
   });
 
-  it('subroutine calls can have paramaters', function() {
+  it('subroutine calls can have parameters', function() {
     var tokens = getAllTokens('foo(5)');
     var subroutineCall = SubroutineCall.consume(tokens)[0];
     expect(subroutineCall).not.toBe(null);
@@ -181,7 +181,7 @@ describe("Statements:", function() {
         var tokens = getAllTokens(string);
         var statement = Statement.ReturnStatement.consume(tokens)[0];
         expect(statement.tag).toBe('returnStatement');
-      })
+      });
     });
 
   });
