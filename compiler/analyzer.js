@@ -11,11 +11,13 @@ module.exports.Type = Type;
 module.exports.Parameter = Parameter;
 module.exports.ParameterList = ParameterList;
 module.exports.SubroutineBody = SubroutineBody;
+module.exports.SubroutineDec = SubroutineDec;
 
 var debug = module.exports.debug = true;
 
 var KEYWORDS_CONSTANTS = ['this', 'true', 'false', 'null'];
 var TYPES = ['int', 'char', 'boolean'];
+var SUBROUTINE_TYPES = ['constructor', 'function', 'method'];
 var OPERATORS = ['+', '-', '*', '/', '&', '|', '<', '>', '='];
 var UNARY_OPERATORS = ['-', '~'];
 var MIN_INTEGER = 0;
@@ -732,6 +734,71 @@ ParameterList.consume = function(tokens) {
   }
 
   return [parameterList, remainingTokens];
+};
+
+function SubroutineDec(kind, type, subroutineName, parameterList) {
+  this.tag = "subroutineDec";
+  this.kind = kind;
+  this.type = type;
+  this.subroutineName = subroutineName;
+  this.parameterList = parameterList;
+  this.body;
+}
+
+SubroutineDec.consume = function(tokens) {
+  var subroutineDec = new SubroutineDec();
+  var token = tokens[0];
+
+  if (!_.contains(SUBROUTINE_TYPES, token.content)) {
+    return [null, tokens];
+  }
+  var remainingTokens = tokens.slice(1);
+  subroutineDec.kind = token;
+
+  var type = Type.consume(remainingTokens);
+  token = remainingTokens[0];
+  if (token.content === 'void') {
+    subroutineDec.type = token;
+    remainingTokens = remainingTokens.slice(1);
+  } else if (type[0] !== nul ) {
+    subroutineDec.type = type[0];
+    remainingTokens = type[1];
+  } else {
+    return [null, tokens];
+  }
+
+  var subroutineName = SubroutineName.consume(remainingTokens);
+  if (subroutineName[0] === null) {
+    return [null, tokens];
+  }
+  remainingTokens = subroutineName[1];
+  subroutineDec.subroutineName = subroutineName[0];
+
+  if (remainingTokens[0].content !== '(') {
+    return [null, tokens];
+  }
+  remainingTokens = remainingTokens.slice(1);
+
+  var parameterList = ParameterList.consume(remainingTokens);
+  if (parameterList[0] === null) {
+    return [null, tokens];
+  }
+  remainingTokens = parameterList[1];
+  subroutineDec.parameters = parameterList[0].parameters;
+
+  if (remainingTokens[0].content !== ')') {
+    return [null, tokens];
+  }
+  remainingTokens = remainingTokens.slice(1);
+
+  var subroutineBody = SubroutineBody.consume(remainingTokens);
+  if (subroutineBody[0] === null) {
+    return [null, tokens];
+  }
+  subroutineDec.body = subroutineBody[0];
+  remainingTokens = subroutineBody[1];
+
+  return [subroutineDec, remainingTokens];
 };
 
 function AnalyzerError(message) {

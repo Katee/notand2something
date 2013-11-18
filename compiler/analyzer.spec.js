@@ -14,6 +14,7 @@ var Type = AnalyzerModule.Type;
 var Parameter = AnalyzerModule.Parameter;
 var ParameterList = AnalyzerModule.ParameterList;
 var SubroutineBody = AnalyzerModule.SubroutineBody;
+var SubroutineDec = AnalyzerModule.SubroutineDec;
 
 describe('Integer Constants', function() {
 
@@ -289,6 +290,17 @@ describe("SubroutineBody", function() {
     var subroutineBody = SubroutineBody.consume(tokens)[0];
     expect(subroutineBody.varDecs.length).toBe(1);
     expect(subroutineBody.statements.length).toBe(1);
+  });
+
+});
+
+describe("SubroutineDec", function(){
+
+  it("put subroutine name, kind, type, parameter list and subroutine body together", function(){
+    var tokens = getAllTokens("method void add(int a, int b) {let s = a + b; return s;}");
+    var subroutineDec = SubroutineDec.consume(tokens)[0];
+    expect(subroutineDec.body.statements.length).toBe(2);
+    expect(subroutineDec.parameters.length).toBe(2);
   });
 
 });
