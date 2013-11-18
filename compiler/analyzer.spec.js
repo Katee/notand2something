@@ -316,6 +316,13 @@ describe("SubroutineDec", function(){
     expect(subroutineDec.parameters.length).toBe(2);
   });
 
+  it("can have an empty parameter list", function(){
+    var tokens = getAllTokens("constructor Test init() {return;}");
+    var subroutineDec = SubroutineDec.consume(tokens)[0];
+    expect(subroutineDec.body.statements.length).toBe(1);
+    expect(subroutineDec.parameters.length).toBe(0);
+  });
+
 });
 
 describe("Class Declaration", function(){

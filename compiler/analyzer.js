@@ -789,12 +789,12 @@ ParameterList.consume = function(tokens) {
   return [parameterList, remainingTokens];
 };
 
-function SubroutineDec(kind, type, subroutineName, parameterList) {
+function SubroutineDec() {
   this.tag = "subroutineDec";
-  this.kind = kind;
-  this.type = type;
-  this.subroutineName = subroutineName;
-  this.parameterList = parameterList;
+  this.kind;
+  this.type;
+  this.subroutineName;
+  this.parameters = [];
   this.body;
 }
 
@@ -833,18 +833,23 @@ SubroutineDec.consume = function(tokens) {
   }
   remainingTokens = literal[1];
 
-  var parameterList = ParameterList.consume(remainingTokens);
-  if (parameterList[0] === null) {
-    return [null, tokens];
-  }
-  remainingTokens = parameterList[1];
-  subroutineDec.parameters = parameterList[0].parameters;
-
   literal = Literal.consume(')', remainingTokens);
   if (literal[0] === null) {
-    return [null, tokens];
+    var parameterList = ParameterList.consume(remainingTokens);
+    if (parameterList[0] === null) {
+      return [null, tokens];
+    }
+    remainingTokens = parameterList[1];
+    subroutineDec.parameters = parameterList[0].parameters;
+
+    literal = Literal.consume(')', remainingTokens);
+    if (literal[0] === null) {
+      return [null, tokens];
+    }
+    remainingTokens = literal[1];
+  } else {
+    remainingTokens = literal[1];
   }
-  remainingTokens = literal[1];
 
   var subroutineBody = SubroutineBody.consume(remainingTokens);
   if (subroutineBody[0] === null) {
