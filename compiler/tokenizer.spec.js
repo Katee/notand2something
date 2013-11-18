@@ -122,7 +122,7 @@ describe("Statements", function() {
 describe("Metadata", function() {
 
   it("contains the line of the source file where the token came from", function() {
-    var tokens = getAllTokens('1\n2\n//comment\n4');
+    var tokens = getAllTokens('1\n2\n//comment\n4', {include_line_numbers: true});
     expect(tokens[0].line).toEqual(1);
     expect(_.last(tokens).line).toEqual(4);
   });
@@ -130,8 +130,8 @@ describe("Metadata", function() {
 });
 
 // Helper method to that gets all tokens from a string
-function getAllTokens(string) {
-  var tokenizer = new Tokenizer(string);
+function getAllTokens(string, options) {
+  var tokenizer = new Tokenizer(string, options);
 
   var tokens = [];
   while (tokenizer.hasMoreText()) {

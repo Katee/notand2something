@@ -15,14 +15,19 @@ var STRING_QUOTE = '"';
 var DIGIT = /[0-9]/;
 var LINE_ENDING = '\n';
 
+var default_options = {
+  include_line_numbers: false
+};
+
 function Token(tag, content) {
   this.tag = tag;
   this.content = content;
 }
 
-function Tokenizer(fileContents) {
+function Tokenizer(fileContents, options) {
   // normalize line endings
   this.text = fileContents.split('\n').join(LINE_ENDING);
+  this.options = _.extend(default_options, options);
 
   /**
    * The current token, can become the next token by calling 'advance'
@@ -48,7 +53,9 @@ Tokenizer.prototype.curChar = function() {
  */
 Tokenizer.prototype.setToken = function(token) {
   // keep the line number for use in error messages
-  token.line = this.line;
+  if (this.options.include_line_numbers) {
+    token.line = this.line;
+  }
   this.currentToken = token;
 
   // clear any whitespace, this saves us from having
