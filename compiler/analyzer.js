@@ -813,7 +813,7 @@ SubroutineDec.consume = function(tokens) {
   if (token.content === 'void') {
     subroutineDec.type = token;
     remainingTokens = remainingTokens.slice(1);
-  } else if (type[0] !== nul ) {
+  } else if (type[0] !== null) {
     subroutineDec.type = type[0];
     remainingTokens = type[1];
   } else {
