@@ -686,7 +686,7 @@ ClassVarDec.consume = function(tokens) {
 };
 
 function VarDec() {
-  this.tag = 'classVarDec';
+  this.tag = 'varDec';
   this.type;
   this.varNames = [];
 }

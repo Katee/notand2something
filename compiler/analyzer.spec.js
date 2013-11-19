@@ -292,16 +292,17 @@ describe("VarDec", function() {
 
   it("are a lot like classVarDecs except without a decorator", function() {
     var tokens = getAllTokens("var Square square;");
-    var classVarDec = VarDec.consume(tokens)[0];
-    expect(classVarDec.type.content).toBe('Square');
-    expect(classVarDec.varNames[0].content).toBe('square');
+    var varDec = VarDec.consume(tokens)[0];
+    expect(varDec.tag).toBe('varDec');
+    expect(varDec.type.content).toBe('Square');
+    expect(varDec.varNames[0].content).toBe('square');
   });
 
   it("can include more than one varName", function() {
     var tokens = getAllTokens("var int x, y;");
-    var classVarDec = VarDec.consume(tokens)[0];
-    expect(classVarDec.type.content).toBe('int');
-    expect(classVarDec.varNames.length).toBe(2);
+    var varDec = VarDec.consume(tokens)[0];
+    expect(varDec.type.content).toBe('int');
+    expect(varDec.varNames.length).toBe(2);
   });
 
 });
