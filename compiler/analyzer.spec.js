@@ -272,6 +272,13 @@ describe("classVarDec", function() {
     expect(classVarDec.decorator.content).toBe('field');
   });
 
+  it("can have more than one varName", function() {
+    var tokens = getAllTokens("field int x, y;");
+    var classVarDec = ClassVarDec.consume(tokens)[0];
+    expect(classVarDec.decorator.content).toBe('field');
+    expect(classVarDec.varNames.length).toBe(2);
+  });
+
 });
 
 describe("VarDec", function() {
@@ -280,7 +287,14 @@ describe("VarDec", function() {
     var tokens = getAllTokens("var Square square;");
     var classVarDec = VarDec.consume(tokens)[0];
     expect(classVarDec.type.content).toBe('Square');
-    expect(classVarDec.varName.content).toBe('square');
+    expect(classVarDec.varNames[0].content).toBe('square');
+  });
+
+  it("can include more than one varName", function() {
+    var tokens = getAllTokens("var int x, y;");
+    var classVarDec = VarDec.consume(tokens)[0];
+    expect(classVarDec.type.content).toBe('int');
+    expect(classVarDec.varNames.length).toBe(2);
   });
 
 });

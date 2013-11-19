@@ -618,36 +618,49 @@ Statement.WhileStatement.consume = function(tokens) {
   return [new Statement.WhileStatement(expression[0], statements), remainingTokens];
 };
 
-function ClassVarDec(decorator, type, varName) {
+function ClassVarDec() {
   this.tag = 'classVarDec';
-  this.decorator = decorator;
-  this.type = type;
-  this.varName = varName;
+  this.decorator;
+  this.type;
+  this.varNames = [];
 }
 
-// TODO deal with case of more than one varName on a single line
 ClassVarDec.consume = function(tokens) {
   var classVarDecTypes = ['static', 'field'];
 
-  if (tokens[0] === undefined || !_.contains(classVarDecTypes, tokens[0].content)) {
+  var classVarDec = new ClassVarDec();
+  var remainingTokens = tokens;
+
+  if (remainingTokens[0] === undefined || !_.contains(classVarDecTypes, tokens[0].content)) {
     return [null, tokens];
   }
-  remainingTokens = tokens.slice(1);
-  var decorator = tokens[0];
+  remainingTokens = remainingTokens.slice(1);
+  classVarDec.decorator = tokens[0];
 
   var type = Type.consume(remainingTokens);
   if (type[0] === null) {
     return [null, tokens];
   }
   remainingTokens = type[1];
-  type = type[0];
+  classVarDec.type = type[0];
 
   var varName = VarName.consume(remainingTokens);
   if (varName[0] === null) {
     return [null, tokens];
   }
   remainingTokens = varName[1];
-  varName = varName[0];
+  classVarDec.varNames.push(varName[0]);
+
+  while (true) {
+    var comma = Literal.consume(',', remainingTokens);
+    varName = VarName.consume(comma[1]);
+    if (comma[0] !== null && varName[0] !== null) {
+      classVarDec.varNames.push(varName[0]);
+      remainingTokens = varName[1];
+    } else {
+      break;
+    }
+  }
 
   var literal = Literal.consume(';', remainingTokens);
   if (literal[0] === null) {
@@ -655,18 +668,19 @@ ClassVarDec.consume = function(tokens) {
   }
   remainingTokens = literal[1];
 
-  return [new ClassVarDec(decorator, type, varName), remainingTokens];
+  return [classVarDec, remainingTokens];
 };
 
-function VarDec(type, varName) {
+function VarDec() {
   this.tag = 'classVarDec';
-  this.type = type;
-  this.varName = varName;
+  this.type;
+  this.varNames = [];
 }
 
-// TODO deal with case of more than one varName on a single line
 VarDec.consume = function(tokens) {
   var classVarDecTypes = ['var'];
+  var remainingTokens = tokens;
+  var varDec = new VarDec();
 
   if (!_.contains(classVarDecTypes, tokens[0].content)) {
     return [null, tokens];
@@ -678,14 +692,25 @@ VarDec.consume = function(tokens) {
     return [null, tokens];
   }
   remainingTokens = type[1];
-  type = type[0];
+  varDec.type = type[0];
 
   var varName = VarName.consume(remainingTokens);
   if (varName[0] === null) {
     return [null, tokens];
   }
   remainingTokens = varName[1];
-  varName = varName[0];
+  varDec.varNames.push(varName[0]);
+
+  while (true) {
+    var comma = Literal.consume(',', remainingTokens);
+    varName = VarName.consume(comma[1]);
+    if (comma[0] !== null && varName[0] !== null) {
+      varDec.varNames.push(varName[0]);
+      remainingTokens = varName[1];
+    } else {
+      break;
+    }
+  }
 
   var literal = Literal.consume(';', remainingTokens);
   if (literal[0] === null) {
@@ -693,7 +718,7 @@ VarDec.consume = function(tokens) {
   }
   remainingTokens = literal[1];
 
-  return [new VarDec(type, varName), remainingTokens];
+  return [varDec, remainingTokens];
 };
 
 function SubroutineBody() {
