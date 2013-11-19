@@ -4,6 +4,8 @@ Q.longStackSupport = true;
 var fs = require('fs');
 
 var Tokenizer = require('./tokenizer');
+var AnalyzerModule = require('./analyzer');
+var CompilationEngine = require('./compilation-engine');
 var getFilesOfExtension = require('./file-finder');
 
 var options = {
@@ -29,11 +31,28 @@ getFilesOfExtension(inPath, options.inputExtension, options.outputExtension).the
   });
 
   _.each(files, function(file){
-    var tokenizer = new Tokenizer(file.content);
-
-    while (tokenizer.hasMoreText()) {
-      tokenizer.advance();
-      console.log(tokenizer.currentToken);
-    }
+    file.tokens = getAllTokens(file.content);
   });
+
+  var asts = _.reduce(files, function(memo, file){
+    memo[file.inPath] = AnalyzerModule.Class.consume(file.tokens)[0];
+    return memo;
+  }, {});
+
+  var ast = asts[files[0].inPath];
+  CompilationEngine.compileClass(ast);
 }).done();
+
+function getAllTokens(string) {
+  var tokenizer = new Tokenizer(string);
+
+  var tokens = [];
+  while (tokenizer.hasMoreText()) {
+    tokenizer.advance();
+    tokens.push(tokenizer.currentToken);
+  }
+
+  return _.reject(tokens, function(t) {
+    return t.tag === "comment";
+  });
+}
