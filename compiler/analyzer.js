@@ -826,19 +826,20 @@ function SubroutineDec() {
   this.tag = "subroutineDec";
   this.kind;
   this.type;
-  this.subroutineName;
+  this.name;
   this.parameters = [];
   this.body;
 }
 
 SubroutineDec.consume = function(tokens) {
   var subroutineDec = new SubroutineDec();
-  var token = tokens[0];
+  var remainingTokens = tokens;
+  var token = remainingTokens[0];
 
   if (token === undefined || !_.contains(SUBROUTINE_TYPES, token.content)) {
     return [null, tokens];
   }
-  var remainingTokens = tokens.slice(1);
+  remainingTokens = remainingTokens.slice(1);
   subroutineDec.kind = token;
 
   var type = Type.consume(remainingTokens);
@@ -858,7 +859,7 @@ SubroutineDec.consume = function(tokens) {
     return [null, tokens];
   }
   remainingTokens = subroutineName[1];
-  subroutineDec.subroutineName = subroutineName[0];
+  subroutineDec.name = subroutineName[0];
 
   var literal = Literal.consume('(', remainingTokens);
   if (literal[0] === null) {
