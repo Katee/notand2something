@@ -388,13 +388,14 @@ Statement.DoStatement.consume = function(tokens) {
   return [new Statement.DoStatement(subroutineCall[0]), remainingTokens];
 };
 
-Statement.LetStatement = function (_varName, _expression) {
+Statement.LetStatement = function () {
   this.tag = 'letStatement';
-  this.varName = _varName;
-  this.expression = _expression;
+  this.varName;
+  this.expression;
 };
 
 Statement.LetStatement.consume = function(tokens) {
+  var letStatement = new Statement.LetStatement();
   var remainingTokens = tokens;
 
   var literal = Literal.consume('let', remainingTokens);
@@ -404,10 +405,22 @@ Statement.LetStatement.consume = function(tokens) {
   remainingTokens = literal[1];
 
   var varName = VarName.consume(remainingTokens);
-  if (varName[0] === null) {
-    return [term, tokens];
+  if (varName[0] !== null) {
+    letStatement.varName = varName[0];
+    remainingTokens = varName[1];
+
+    var openBracket = Literal.consume("[", remainingTokens);
+    if (openBracket[0] !== null) {
+      var arrayExpression = Expression.consume(openBracket[1]);
+      var closeBracket = Literal.consume("]", arrayExpression[1]);
+      if (arrayExpression[0] !== null && closeBracket[0] !== null) {
+        letStatement.arrayExpression = arrayExpression[0];
+        remainingTokens = closeBracket[1];
+      }
+    }
+  } else {
+    return [null, tokens];
   }
-  remainingTokens = varName[1];
 
   literal = Literal.consume('=', remainingTokens);
   if (literal[0] === null) {
@@ -420,6 +433,7 @@ Statement.LetStatement.consume = function(tokens) {
     return [null, tokens];
   }
   remainingTokens = expression[1];
+  letStatement.expression = expression[0];
 
   literal = Literal.consume(';', remainingTokens);
   if (literal[0] === null) {
@@ -427,7 +441,7 @@ Statement.LetStatement.consume = function(tokens) {
   }
   remainingTokens = literal[1];
 
-  return [new Statement.LetStatement(varName[0], expression[0]), remainingTokens];
+  return [letStatement, remainingTokens];
 };
 
 Statement.ReturnStatement = function () {

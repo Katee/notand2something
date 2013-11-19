@@ -184,6 +184,13 @@ describe("Statements:", function() {
       expect(statement.tag).toBe('letStatement');
     });
 
+    it("can assign a value to a array indice", function() {
+      var tokens = getAllTokens("let x[5] = 10;");
+      var statement = Statement.LetStatement.consume(tokens)[0];
+      expect(statement.tag).toBe('letStatement');
+      expect(statement.arrayExpression).not.toBe(undefined);
+    });
+
   });
 
   describe("Return statements", function() {
