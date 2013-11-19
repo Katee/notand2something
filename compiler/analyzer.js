@@ -222,10 +222,10 @@ Expression.consume = function(tokens) {
   var remainingTokens = tokens;
 
   // optional first unaryOp
-  var op = UnaryOp.consume(remainingTokens);
-  if (op[0] !== null) {
-    expression.terms.push(op[0]);
-    remainingTokens = op[1];
+  var unop = UnaryOp.consume(remainingTokens);
+  if (unop[0] !== null) {
+    expression.terms.push(unop[0]);
+    remainingTokens = unop[1];
   }
 
   term = Term.consume(remainingTokens);
