@@ -3,6 +3,7 @@ var _ = require('underscore');
 module.exports.Term = Term;
 module.exports.Expression = Expression;
 module.exports.SubroutineCall = SubroutineCall;
+module.exports.ArrayExpression = ArrayExpression;
 module.exports.ExpressionList = ExpressionList;
 module.exports.Statement = Statement;
 module.exports.ClassVarDec = ClassVarDec;
@@ -66,20 +67,16 @@ Term.consume = function(tokens) {
     return [term, keywordConstant[1]];
   }
 
+  var arrayExpression = ArrayExpression.consume(tokens);
+  if (arrayExpression[0] !== null) {
+    term.content = arrayExpression[0];
+    return [term, arrayExpression[1]];
+  }
+
   var varName = VarName.consume(tokens);
   if (varName[0] !== null) {
     term.content = varName[0];
-    var openBracket = Literal.consume("[", varName[1]);
-    if (openBracket[0] === null) {
-      return [term, varName[1]];
-    } else {
-      var expression = Expression.consume(openBracket[1]);
-      var closeBracket = Literal.consume("]", expression[1]);
-      if (expression[0] !== null && closeBracket[0] !== null) {
-        term.expression = expression[0];
-        return [term, closeBracket[1]];
-      }
-    }
+    return [term, varName[1]];
   }
 
   var literal = Literal.consume('(', tokens);
@@ -254,6 +251,34 @@ Expression.consume = function(tokens) {
   }
 };
 
+function ArrayExpression() {
+  this.tag = "arrayExpression";
+  this.varName;
+  this.expression;
+}
+
+ArrayExpression.consume = function(tokens) {
+  var arrayExpression = new ArrayExpression();
+  var remainingTokens = tokens;
+  var subroutineName;
+
+  var varName = VarName.consume(remainingTokens);
+  if (varName[0] !== null) {
+    var openBracket = Literal.consume("[", varName[1]);
+    if (openBracket[0] !== null) {
+      var expression = Expression.consume(openBracket[1]);
+      var closeBracket = Literal.consume("]", expression[1]);
+      if (expression[0] !== null && closeBracket[0] !== null) {
+        arrayExpression.expression = expression[0];
+        arrayExpression.varName = varName[0];
+        return [arrayExpression, closeBracket[1]];
+      }
+    }
+  }
+
+  return [null, tokens];
+};
+
 function SubroutineCall() {
   this.tag = "subroutineCall";
   this.object;
@@ -405,19 +430,14 @@ Statement.LetStatement.consume = function(tokens) {
   remainingTokens = literal[1];
 
   var varName = VarName.consume(remainingTokens);
-  if (varName[0] !== null) {
+  var arrayExpression = ArrayExpression.consume(remainingTokens);
+
+  if (arrayExpression[0] !== null) {
+    letStatement.varName = arrayExpression[0];
+    remainingTokens = arrayExpression[1];
+  } else if (varName[0] !== null) {
     letStatement.varName = varName[0];
     remainingTokens = varName[1];
-
-    var openBracket = Literal.consume("[", remainingTokens);
-    if (openBracket[0] !== null) {
-      var arrayExpression = Expression.consume(openBracket[1]);
-      var closeBracket = Literal.consume("]", arrayExpression[1]);
-      if (arrayExpression[0] !== null && closeBracket[0] !== null) {
-        letStatement.arrayExpression = arrayExpression[0];
-        remainingTokens = closeBracket[1];
-      }
-    }
   } else {
     return [null, tokens];
   }
