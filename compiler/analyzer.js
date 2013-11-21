@@ -43,40 +43,16 @@ Term.consume = function(tokens) {
   var term = new Term();
   var token = tokens[0];
 
-  var integerConstant = IntegerConstant.consume(tokens);
-  if (integerConstant[0] !== null) {
-    term.content = integerConstant[0];
-    return [term, integerConstant[1]];
-  }
+  var parsers = [IntegerConstant, StringConstant, SubroutineCall,
+    KeywordConstant, ArrayExpression, VarName];
 
-  var stringConstant = StringConstant.consume(tokens);
-  if (stringConstant[0] !== null) {
-    term.content = stringConstant[0];
-    return [term, stringConstant[1]];
-  }
-
-  var subroutineCall = SubroutineCall.consume(tokens);
-  if (subroutineCall[0] !== null) {
-    term.content = subroutineCall[0];
-    return [term, subroutineCall[1]];
-  }
-
-  var keywordConstant = KeywordConstant.consume(tokens);
-  if (keywordConstant[0] !== null) {
-    term.content = keywordConstant[0];
-    return [term, keywordConstant[1]];
-  }
-
-  var arrayExpression = ArrayExpression.consume(tokens);
-  if (arrayExpression[0] !== null) {
-    term.content = arrayExpression[0];
-    return [term, arrayExpression[1]];
-  }
-
-  var varName = VarName.consume(tokens);
-  if (varName[0] !== null) {
-    term.content = varName[0];
-    return [term, varName[1]];
+  for (i in parsers) {
+    var parser = parsers[i];
+    var thing = parser.consume(tokens);
+    if (thing[0] !== null) {
+      term.content = thing[0];
+      return [term, thing[1]];
+    }
   }
 
   var literal = Literal.consume('(', tokens);
