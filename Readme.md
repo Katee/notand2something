@@ -1,5 +1,3 @@
-# Nand2Tetris
+# Not And to Something
 
-My solutions to the very fun [Nand2Tetris](http://www.nand2tetris.org/) Project.
-
-Solutions are by chapter except for chapters 7 and 8 which are in vm2assembly.
+Solutions are by chapter except for chapters 7 and 8 which are in vm2assembly and 10 and 11 which are in compiler.
