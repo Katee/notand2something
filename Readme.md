@@ -1,3 +1,5 @@
 # Not And to Something
 
-Solutions are by chapter except for chapters 7 and 8 which are in vm2assembly and 10 and 11 which are in compiler.
+These are my solutions to a fantastic project that I won't name (when I had the name here people used my answers to cheat D:)
+
+This project contains the complete source code for an 80s style simple computer, all the way from simple gates to a CPU. It also has a compiler for a high level Java-esque language that can be compiled and run on the virtual computer.
