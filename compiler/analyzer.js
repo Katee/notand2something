@@ -118,7 +118,7 @@ VarName.consume = function(tokens){
   var token = tokens[0];
   // var names are this or identifiers that start with a lowercase letter
   if (token !== undefined && (token.tag === 'keyword' && token.content === 'this'
-      || token.tag === 'identifier' && token.content[0].match(/[a-z]/))) {
+      || token.tag === 'identifier')) {
     return [token, tokens.slice(1)];
   }
   return [null, tokens];
