@@ -194,7 +194,7 @@ describe("Statements:", function() {
       var tokens = getAllTokens("let x[5] = 10;");
       var statement = Statement.LetStatement.consume(tokens)[0];
       expect(statement.tag).toBe('letStatement');
-      expect(statement.arrayExpression).not.toBe(undefined);
+      expect(statement.varName.tag).toBe('arrayExpression');
     });
 
   });
