@@ -25,6 +25,43 @@ var UNARY_OPERATORS = ['-', '~'];
 var MIN_INTEGER = 0;
 var MAX_INTEGER = 32767;
 
+function matchPatternToTokens(pattern, tokens) {
+  var remainingTokens = tokens;
+  var results = [];
+
+  for (i in pattern) {
+    var pattern_token = pattern[i];
+    var required = true;
+    var parser;
+
+    if (typeof(pattern_token) === 'string') {
+      parser = {
+        consume: function(t) {
+          return Literal.consume(pattern[i], t);
+        }
+      };
+    } else if (typeof(pattern_token) === "function") {
+      parser = pattern_token;
+    } else if (typeof(pattern_token) === "object") {
+      if (pattern_token.info === "optional") {
+        required = false;
+      }
+      parser = pattern_token.parser;
+    }
+
+    var thing = parser.consume(remainingTokens);
+
+    if (required && thing[0] === null) {
+      return [null, tokens];
+    }
+
+    remainingTokens = thing[1];
+    results.push(thing[0]);
+  }
+
+  return [results, remainingTokens];
+}
+
 function eitherConsumer(parsers) {
   var t = function(){};
   t.consume = function(tokens) {
@@ -383,33 +420,20 @@ Statement.consume = function(tokens) {
   return [null, tokens];
 };
 
-Statement.DoStatement = function(_subroutineCall) {
+Statement.DoStatement = function(subroutineCall) {
   this.tag = "doStatement";
-  this.subroutineCall = _subroutineCall;
+  this.subroutineCall = subroutineCall;
 };
 
 Statement.DoStatement.consume = function(tokens) {
-  var remainingTokens = tokens;
+  var pattern = ['do', SubroutineCall, ';'];
+  var results = matchPatternToTokens(pattern, tokens);
 
-  var literal = Literal.consume('do', remainingTokens);
-  if (literal[0] === null) {
+  if (results[0] === null) {
     return [null, tokens];
+  } else {
+    return [{tag: 'doStatement', subroutineCall: results[0][1]}, results[1]];
   }
-  remainingTokens = literal[1];
-
-  var subroutineCall = SubroutineCall.consume(remainingTokens);
-  if (subroutineCall[0] === null) {
-    return [null, tokens];
-  }
-  remainingTokens = subroutineCall[1];
-
-  literal = Literal.consume(';', remainingTokens);
-  if (literal[0] === null) {
-    return [null, tokens];
-  }
-  remainingTokens = literal[1];
-
-  return [new Statement.DoStatement(subroutineCall[0]), remainingTokens];
 };
 
 Statement.LetStatement = function () {
@@ -469,28 +493,16 @@ Statement.ReturnStatement = function () {
 };
 
 Statement.ReturnStatement.consume = function(tokens) {
-  var returnStatement = new Statement.ReturnStatement();
-  var remainingTokens = tokens;
+  var pattern = ['return', {parser: Expression, info: 'optional'}, ';'];
+  var results = matchPatternToTokens(pattern, tokens);
 
-  var literal = Literal.consume('return', remainingTokens);
-  if (literal[0] === null) {
+  if (results[0] === null) {
     return [null, tokens];
+  } else {
+    var returnStatement = new Statement.ReturnStatement();
+    returnStatement.expression = results[0][1];
+    return [returnStatement, results[1]];
   }
-  remainingTokens = literal[1];
-
-  var expression = Expression.consume(remainingTokens);
-  if (expression[0] !== null) {
-    returnStatement.expression = expression[0];
-    remainingTokens = expression[1];
-  }
-
-  literal = Literal.consume(';', remainingTokens);
-  if (literal[0] === null) {
-    return [null, tokens];
-  }
-  remainingTokens = literal[1];
-
-  return [returnStatement, remainingTokens];
 };
 
 Statement.IfStatement = function (predicate, statements, elseStatements) {
