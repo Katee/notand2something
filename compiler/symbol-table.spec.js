@@ -20,9 +20,10 @@ describe('Symbol Table', function () {
   });
 
   it("lookup will take the most specific variable in scope", function () {
-    symbolTable.add('x', 'var', 'int');
+    symbolTable.add('x', 'local', 'int');
     symbolTable.add('x', 'static', 'boolean');
     var account = symbolTable.get('x');
+    console.log(account);
     expect(account.type).toEqual('int');
   });
 
