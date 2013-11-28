@@ -194,13 +194,6 @@ Expression.consume = function(tokens) {
   var expression = new Expression();
   var remainingTokens = tokens;
 
-  // optional first unaryOp
-  var unop = UnaryOp.consume(remainingTokens);
-  if (unop[0] !== null) {
-    expression.terms.push(unop[0]);
-    remainingTokens = unop[1];
-  }
-
   term = Term.consume(remainingTokens);
   if (term[0] !== null) {
     expression.terms.push(term[0]);
@@ -249,6 +242,27 @@ ArrayExpression.consume = function(tokens) {
         arrayExpression.varName = varName[0];
         return [arrayExpression, closeBracket[1]];
       }
+    }
+  }
+
+  return [null, tokens];
+};
+
+function UnaryOpTerm() {
+  this.tag = "unaryOpTerm";
+  this.content = [];
+}
+
+UnaryOpTerm.consume = function(tokens) {
+  var unaryOpTerm = new UnaryOpTerm();
+
+  var unop = UnaryOp.consume(tokens);
+  if (unop[0] !== null) {
+    term = Term.consume(unop[1]);
+    if (term[0] !== null) {
+      unaryOpTerm.content.push(unop[0]);
+      unaryOpTerm.content.push(term[0]);
+      return [unaryOpTerm, term[1]];
     }
   }
 
