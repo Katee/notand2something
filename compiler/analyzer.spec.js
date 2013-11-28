@@ -66,8 +66,8 @@ describe('Terms', function() {
   it('can unaryOp and then a term', function() {
     var tokens = getAllTokens('-5');
     var term = Term.consume(tokens)[0];
-    expect(term.content[0].content).toBe('-');
-    expect(term.content.length).toBe(2);
+    expect(term.content.content[0].content).toBe('-');
+    expect(term.content.content.length).toBe(2);
   });
 
   it('can be an expression in parens', function() {
@@ -79,7 +79,7 @@ describe('Terms', function() {
   it('can be an array lookup', function() {
     var tokens = getAllTokens('test[10 + 2]');
     var term = Term.consume(tokens)[0];
-    expect(term.expression.terms.length).toBe(3);
+    expect(term.content.expression.terms.length).toBe(3);
   });
 
 });
