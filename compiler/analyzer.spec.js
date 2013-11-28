@@ -86,22 +86,28 @@ describe('Terms', function() {
 
 describe("Expressions", function() {
 
-  it("expressions are terms followed by operators paired with a term", function() {
+  it("are terms followed by operators paired with a term", function() {
     var tokens = getAllTokens('7 + 5');
     var expression = Expression.consume(tokens)[0];
     expect(expression.terms.length).toBe(3);
   });
 
-  it("trailing ops are not part of the expression", function() {
+  it("will not contain trailing operations", function() {
     var tokens = getAllTokens('7 + 5 -');
     var expression = Expression.consume(tokens)[0];
     expect(expression.terms.length).toBe(3);
   });
 
-  it("an expression can start with a unary op", function() {
+  it("can start with a unary op", function() {
     var tokens = getAllTokens('-true)');
     var expression = Expression.consume(tokens)[0];
-    expect(expression.terms.length).toBe(2);
+    expect(expression.terms.length).toBe(1);
+  });
+
+  it("can be surrounded in brackets", function() {
+    var tokens = getAllTokens('(2 + y)');
+    var expression = Expression.consume(tokens)[0];
+    expect(expression.terms.length).toBe(1);
   });
 
 });
