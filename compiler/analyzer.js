@@ -284,7 +284,7 @@ function SubroutineCall() {
   this.tag = "subroutineCall";
   this.object;
   this.subroutine;
-  this.expressionList;
+  this.expressions = [];
 }
 
 SubroutineCall.consume = function(tokens) {
@@ -328,7 +328,7 @@ SubroutineCall.consume = function(tokens) {
     remainingTokens = remainingTokens.slice(1);
     var expressionList = ExpressionList.consume(remainingTokens);
     if (expressionList[0] !== null) {
-      subroutineCall.expressionList = expressionList[0];
+      subroutineCall.expressions = expressionList[0].expressions;
     }
     if (expressionList[1][0].content === ')') {
       return [subroutineCall, expressionList[1].slice(1)];

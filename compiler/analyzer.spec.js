@@ -159,7 +159,7 @@ describe('SubroutineCall', function() {
     var tokens = getAllTokens('foo(5)');
     var subroutineCall = SubroutineCall.consume(tokens)[0];
     expect(subroutineCall).not.toBe(null);
-    expect(subroutineCall.expressionList.expressions.length).toBe(1);
+    expect(subroutineCall.expressions.length).toBe(1);
   });
 
 });
