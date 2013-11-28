@@ -25,6 +25,21 @@ var UNARY_OPERATORS = ['-', '~'];
 var MIN_INTEGER = 0;
 var MAX_INTEGER = 32767;
 
+function eitherConsumer(parsers) {
+  var t = function(){};
+  t.consume = function(tokens) {
+    for (i in parsers) {
+      var parser = parsers[i];
+      var thing = parser.consume(tokens);
+      if (thing[0] !== null) {
+        return [thing[0], thing[1]];
+      }
+    }
+    return [null, tokens];
+  };
+  return t;
+}
+
 var Literal = {
   consume: function(literal, tokens) {
     if (tokens !== undefined && tokens[0] !== undefined && tokens[0].content === literal) {
@@ -43,16 +58,12 @@ Term.consume = function(tokens) {
   var term = new Term();
   var token = tokens[0];
 
-  var parsers = [IntegerConstant, StringConstant, SubroutineCall,
-    KeywordConstant, ArrayExpression, VarName];
+  var result = eitherConsumer([IntegerConstant, StringConstant, SubroutineCall,
+    KeywordConstant, ArrayExpression, VarName, UnaryOpTerm]).consume(tokens);
 
-  for (i in parsers) {
-    var parser = parsers[i];
-    var thing = parser.consume(tokens);
-    if (thing[0] !== null) {
-      term.content = thing[0];
-      return [term, thing[1]];
-    }
+  if (result[0] !== null) {
+    term.content = result[0];
+    return [term, result[1]];
   }
 
   var literal = Literal.consume('(', tokens);
@@ -362,13 +373,11 @@ function Statement() {}
 
 Statement.consume = function(tokens) {
   var parsers = ['LetStatement', 'IfStatement', 'WhileStatement', 'DoStatement', 'ReturnStatement'];
+  parsers = _.map(parsers, function(parser){return Statement[parser];});
+  var result = eitherConsumer(parsers).consume(tokens);
 
-  for (i in parsers) {
-    var parser = parsers[i];
-    var statement = Statement[parser].consume(tokens);
-    if (statement[0] !== null) {
-      return statement;
-    }
+  if (result[0] !== null) {
+    return [result[0], result[1]];
   }
 
   return [null, tokens];
