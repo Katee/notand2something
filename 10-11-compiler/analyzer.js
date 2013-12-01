@@ -998,8 +998,3 @@ Class.consume = function(tokens) {
 
   return [klass, remainingTokens];
 };
-
-function AnalyzerError(message) {
-  this.name = "AnalyzerError";
-  this.message = message;
-}
