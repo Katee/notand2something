@@ -86,6 +86,22 @@ var Literal = {
   }
 };
 
+function SingleToken(matchFn) {
+  this.matchFn = matchFn;
+};
+
+SingleToken.prototype.consume = function(tokens) {
+  if (tokens === undefined || tokens[0] === undefined) {
+    return [null, tokens];
+  }
+  var token = tokens[0];
+  if (this.matchFn(token)) {
+    return [token, tokens.slice(1)];
+  } else {
+    return [null, tokens];
+  }
+}
+
 function Term() {
   this.tag = 'term';
   this.content;
@@ -128,49 +144,48 @@ Term.consume = function(tokens) {
   return [null, tokens];
 };
 
-function IntegerConstant(){}
-IntegerConstant.consume = function(tokens){
-  var token = tokens[0];
-  if (token !== undefined && token.tag === 'integerConstant') {
-    var integer = token.content;
-    if (Number(integer) <= MAX_INTEGER && Number(integer) >= MIN_INTEGER) {
-      return [token, tokens.slice(1)];
-    } else {
-      throw {name: "IntegerOutOfBounds", message: integer + ' is not in the range ' + MIN_INTEGER + '..' + MAX_INTEGER};
-    }
+var IntegerConstant = new SingleToken(function(token) {
+  if (token.tag !== 'integerConstant') {
+    return false;
   }
-
-  return [null, tokens];
-};
-
-function StringConstant() {}
-StringConstant.consume = function(tokens){
-  var token = tokens[0];
-  if (token !== undefined && token.tag === 'stringConstant') {
-    return [token, tokens.slice(1)];
+  var integer = token.content;
+  if (Number(integer) <= MAX_INTEGER && Number(integer) >= MIN_INTEGER) {
+    return true;
+  } else {
+    throw {name: "IntegerOutOfBounds", message: integer + ' is not in the range ' + MIN_INTEGER + '..' + MAX_INTEGER};
   }
-  return [null, tokens];
-};
+});
 
-function KeywordConstant() {}
-KeywordConstant.consume = function(tokens){
-  var token = tokens[0];
-  if (token !== undefined && token.tag === 'keyword' && _.contains(KEYWORDS_CONSTANTS, token.content)) {
-    return [token, tokens.slice(1)];
-  }
-  return [null, tokens];
-};
+var StringConstant = new SingleToken(function(token) {
+  return token.tag == 'stringConstant';
+});
 
-function VarName(){}
-VarName.consume = function(tokens){
-  var token = tokens[0];
-  // var names are this or identifiers that start with a lowercase letter
-  if (token !== undefined && (token.tag === 'keyword' && token.content === 'this'
-      || token.tag === 'identifier')) {
-    return [token, tokens.slice(1)];
-  }
-  return [null, tokens];
-};
+var KeywordConstant = new SingleToken(function(token) {
+  return token.tag === 'keyword' && _.contains(KEYWORDS_CONSTANTS, token.content);
+});
+
+var VarName = new SingleToken(function(token) {
+  return (token.tag === 'keyword' && token.content === 'this')
+        || token.tag === 'identifier';
+});
+
+var ClassName = new SingleToken(function(token) {
+  return token.tag === 'identifier';
+});
+
+var SubroutineName = new SingleToken(function(token) {
+  return token.tag === 'identifier';
+});
+
+var UnaryOp = new SingleToken(function(token) {
+  return token.tag === 'symbol'
+      && _.contains(UNARY_OPERATORS, token.content);
+});
+
+var Op = new SingleToken(function(token) {
+  return token.tag === 'symbol'
+      && _.contains(OPERATORS, token.content);
+});
 
 function Type(){}
 Type.consume = function(tokens){
@@ -189,44 +204,6 @@ Type.consume = function(tokens){
     return [className[0], className[1]];
   }
 
-  return [null, tokens];
-};
-
-function ClassName(){}
-ClassName.consume = function(tokens){
-  var token = tokens[0];
-  // class names are identifiers that start with an uppercase letter
-  if (token !== undefined
-      && (token.tag === 'identifier' && token.content[0].match(/[A-Z]/))) {
-    return [token, tokens.slice(1)];
-  }
-  return [null, tokens];
-};
-
-function SubroutineName(){}
-SubroutineName.consume = function(tokens){
-  var token = tokens[0];
-  if (token !== undefined && token.tag === 'identifier') {
-    return [token, tokens.slice(1) || []];
-  }
-  return [null, tokens];
-};
-
-function UnaryOp() {}
-UnaryOp.consume = function(tokens){
-  var token = tokens[0];
-  if (token !== undefined && token.tag === 'symbol' && _.contains(UNARY_OPERATORS, token.content)) {
-    return [token, tokens.slice(1)];
-  }
-  return [null, tokens];
-};
-
-function Op() {}
-Op.consume = function(tokens){
-  var token = tokens[0];
-  if (token !== undefined && token.tag === 'symbol' && _.contains(OPERATORS, token.content)) {
-    return [token, tokens.slice(1)];
-  }
   return [null, tokens];
 };
 
@@ -998,8 +975,3 @@ Class.consume = function(tokens) {
 
   return [klass, remainingTokens];
 };
-
-function AnalyzerError(message) {
-  this.name = "AnalyzerError";
-  this.message = message;
-}

@@ -13,6 +13,8 @@ var KEYWORDS = [
   "let", "do", "if", "else", "while", "return" ];
 var STRING_QUOTE = '"';
 var DIGIT = /[0-9]/;
+var WORD_START = /[a-zA-Z_]/;
+var WORD_CONTENTS = /[a-zA-Z_0-9]/;
 var LINE_ENDING = '\n';
 
 var default_options = {
@@ -29,10 +31,6 @@ function Tokenizer(fileContents, options) {
   this.text = fileContents.split('\n').join(LINE_ENDING);
   this.options = _.extend(default_options, options);
 
-  /**
-   * The current token, can become the next token by calling 'advance'
-   */
-  this.currentToken;
   this.index = 0;
   this.line = 1;
 
@@ -146,22 +144,23 @@ Tokenizer.prototype.consumeString = function(tokenStartIndex) {
 };
 
 Tokenizer.prototype.consumeWord = function(tokenStartIndex) {
-  if (!this.curChar().match(/[a-zA-Z_]/)) return null;
+  if (!this.curChar().match(WORD_START)) return null;
 
   do {
     this.index++;
-  } while (this.hasMoreText() && this.curChar().match(/[a-zA-Z0-9_]/))
+  } while (this.hasMoreText() && this.curChar().match(WORD_CONTENTS))
 
-  // A word can be a keyword or an indentifier
+  // A word can be a keyword or an identifier
   var word = this.text.slice(tokenStartIndex, this.index);
   var tag = _.contains(KEYWORDS, word) ? 'keyword' : 'identifier';
   return new Token(tag, word);
 };
 
 Tokenizer.prototype.consumeSymbol = function(tokenStartIndex) {
-  if (!_.contains(SYMBOLS, this.curChar())) return null;
+  var char = this.curChar();
+  if (!_.contains(SYMBOLS, char)) return null;
   this.index++;
-  return new Token('symbol', this.text.substr(tokenStartIndex, 1));
+  return new Token('symbol', char);
 };
 
 // advances until something that isn't whitespace
