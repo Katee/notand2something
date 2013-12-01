@@ -87,20 +87,22 @@ var Literal = {
 };
 
 function SingleToken(matchFn) {
-  this.matchFn = matchFn;
-}
+  var singleTokenConsumer = function (){};
 
-SingleToken.prototype.consume = function(tokens) {
-  if (tokens === undefined || tokens[0] === undefined) {
-    return [null, tokens];
-  }
-  var token = tokens[0];
-  if (this.matchFn(token)) {
-    return [token, tokens.slice(1)];
-  } else {
-    return [null, tokens];
-  }
-};
+  singleTokenConsumer.consume = function(tokens) {
+    if (tokens === undefined || tokens[0] === undefined) {
+      return [null, tokens];
+    }
+    var token = tokens[0];
+    if (matchFn(token)) {
+      return [token, tokens.slice(1)];
+    } else {
+      return [null, tokens];
+    }
+  };
+
+  return singleTokenConsumer;
+}
 
 function Term() {
   this.tag = 'term';
@@ -144,7 +146,7 @@ Term.consume = function(tokens) {
   return [null, tokens];
 };
 
-var IntegerConstant = new SingleToken(function(token) {
+var IntegerConstant = SingleToken(function(token) {
   if (token.tag !== 'integerConstant') {
     return false;
   }
@@ -156,33 +158,33 @@ var IntegerConstant = new SingleToken(function(token) {
   }
 });
 
-var StringConstant = new SingleToken(function(token) {
+var StringConstant = SingleToken(function(token) {
   return token.tag == 'stringConstant';
 });
 
-var KeywordConstant = new SingleToken(function(token) {
+var KeywordConstant = SingleToken(function(token) {
   return token.tag === 'keyword' && _.contains(KEYWORDS_CONSTANTS, token.content);
 });
 
-var VarName = new SingleToken(function(token) {
+var VarName = SingleToken(function(token) {
   return (token.tag === 'keyword' && token.content === 'this')
         || token.tag === 'identifier';
 });
 
-var ClassName = new SingleToken(function(token) {
+var ClassName = SingleToken(function(token) {
   return token.tag === 'identifier';
 });
 
-var SubroutineName = new SingleToken(function(token) {
+var SubroutineName = SingleToken(function(token) {
   return token.tag === 'identifier';
 });
 
-var UnaryOp = new SingleToken(function(token) {
+var UnaryOp = SingleToken(function(token) {
   return token.tag === 'symbol'
       && _.contains(UNARY_OPERATORS, token.content);
 });
 
-var Op = new SingleToken(function(token) {
+var Op = SingleToken(function(token) {
   return token.tag === 'symbol'
       && _.contains(OPERATORS, token.content);
 });
