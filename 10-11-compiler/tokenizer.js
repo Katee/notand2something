@@ -144,7 +144,7 @@ Tokenizer.prototype.consumeWord = function(tokenStartIndex) {
     this.index++;
   } while (this.hasMoreText() && this.curChar().match(/[a-zA-Z0-9_]/))
 
-  // A word can be a keyword or an indentifier
+  // A word can be a keyword or an identifier
   var word = this.text.slice(tokenStartIndex, this.index);
   var tag = _.contains(KEYWORDS, word) ? 'keyword' : 'identifier';
   return new Token(tag, word);
