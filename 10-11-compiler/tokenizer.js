@@ -29,10 +29,6 @@ function Tokenizer(fileContents, options) {
   this.text = fileContents.split('\n').join(LINE_ENDING);
   this.options = _.extend(default_options, options);
 
-  /**
-   * The current token, can become the next token by calling 'advance'
-   */
-  this.currentToken;
   this.index = 0;
   this.line = 1;
 
