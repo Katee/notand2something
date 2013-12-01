@@ -23,7 +23,6 @@ describe('Symbol Table', function () {
     symbolTable.add('x', 'local', 'int');
     symbolTable.add('x', 'static', 'boolean');
     var account = symbolTable.get('x');
-    console.log(account);
     expect(account.type).toEqual('int');
   });
 
