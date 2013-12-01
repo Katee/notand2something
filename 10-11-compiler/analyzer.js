@@ -88,7 +88,7 @@ var Literal = {
 
 function SingleToken(matchFn) {
   this.matchFn = matchFn;
-};
+}
 
 SingleToken.prototype.consume = function(tokens) {
   if (tokens === undefined || tokens[0] === undefined) {
@@ -100,7 +100,7 @@ SingleToken.prototype.consume = function(tokens) {
   } else {
     return [null, tokens];
   }
-}
+};
 
 function Term() {
   this.tag = 'term';
