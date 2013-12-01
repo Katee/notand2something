@@ -26,6 +26,11 @@ describe("Comments", function() {
     expect(_.first(tokens).content).toBe("return");
   });
 
+  it("block comments end must end before EOF", function() {
+    var brokenBlockComment = "/* block comment";
+    expect(getAllTokens, brokenBlockComment).toThrow();
+  });
+
   it("block comments can contain double quotes", function() {
     var tokens = getAllTokens('/* "comment" */');
     expect(tokens[0].content).toBe('/* "comment" */');

@@ -116,9 +116,13 @@ Tokenizer.prototype.consumeInlineComment = function(tokenStartIndex) {
 Tokenizer.prototype.consumeBlockComment = function(tokenStartIndex) {
   if (!(this.text.substr(this.index, BLOCK_COMMENT_START.length) === BLOCK_COMMENT_START)) return null;
 
-  while (this.hasMoreText() && this.text.substr(this.index, BLOCK_COMMENT_END.length) !== BLOCK_COMMENT_END) {
+  while (this.text.substr(this.index, BLOCK_COMMENT_END.length) !== BLOCK_COMMENT_END) {
+    if (!this.hasMoreText()) {
+      throw {name: 'SyntaxError', message: 'Expected end of block comment before end of file'};
+    }
     this.index++;
   }
+
   this.index = this.index + BLOCK_COMMENT_END.length;
   return new Token('comment', this.text.slice(tokenStartIndex, this.index));
 };
