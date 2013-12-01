@@ -153,9 +153,10 @@ Tokenizer.prototype.consumeWord = function(tokenStartIndex) {
 };
 
 Tokenizer.prototype.consumeSymbol = function(tokenStartIndex) {
-  if (!_.contains(SYMBOLS, this.curChar())) return null;
+  var char = this.curChar();
+  if (!_.contains(SYMBOLS, char)) return null;
   this.index++;
-  return new Token('symbol', this.text.substr(tokenStartIndex, 1));
+  return new Token('symbol', char);
 };
 
 // advances until something that isn't whitespace
