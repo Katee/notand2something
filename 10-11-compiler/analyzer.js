@@ -247,53 +247,28 @@ Expression.consume = function(tokens) {
   }
 };
 
-function ArrayExpression() {
-  this.tag = "arrayExpression";
-  this.varName;
-  this.expression;
-}
-
+function ArrayExpression() {}
 ArrayExpression.consume = function(tokens) {
-  var arrayExpression = new ArrayExpression();
-  var remainingTokens = tokens;
-  var subroutineName;
+  var pattern = [VarName, '[', Expression, ']'];
+  var results = matchPatternToTokens(pattern, tokens);
 
-  var varName = VarName.consume(remainingTokens);
-  if (varName[0] !== null) {
-    var openBracket = Literal.consume("[", varName[1]);
-    if (openBracket[0] !== null) {
-      var expression = Expression.consume(openBracket[1]);
-      var closeBracket = Literal.consume("]", expression[1]);
-      if (expression[0] !== null && closeBracket[0] !== null) {
-        arrayExpression.expression = expression[0];
-        arrayExpression.varName = varName[0];
-        return [arrayExpression, closeBracket[1]];
-      }
-    }
+  if (results[0] === null) {
+    return [null, tokens];
+  } else {
+    return [{tag: 'arrayExpression', varName: results[0][0], expression: results[0][2]}, results[1]];
   }
-
-  return [null, tokens];
 };
 
-function UnaryOpTerm() {
-  this.tag = "unaryOpTerm";
-  this.content = [];
-}
-
+function UnaryOpTerm() {}
 UnaryOpTerm.consume = function(tokens) {
-  var unaryOpTerm = new UnaryOpTerm();
+  var pattern = [UnaryOp, Term];
+  var results = matchPatternToTokens(pattern, tokens);
 
-  var unop = UnaryOp.consume(tokens);
-  if (unop[0] !== null) {
-    term = Term.consume(unop[1]);
-    if (term[0] !== null) {
-      unaryOpTerm.content.push(unop[0]);
-      unaryOpTerm.content.push(term[0]);
-      return [unaryOpTerm, term[1]];
-    }
+  if (results[0] === null) {
+    return [null, tokens];
+  } else {
+    return [{tag: 'unaryOpTerm', content: [results[0][0], results[0][1]]}, results[1]];
   }
-
-  return [null, tokens];
 };
 
 function SubroutineCall() {
