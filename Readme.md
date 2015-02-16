@@ -1,4 +1,4 @@
-# Not And to Something
+# ¬& to Something
 
 These are my solutions to a fantastic project that I won't name (when I had the name here people used my answers to cheat D:)
 
